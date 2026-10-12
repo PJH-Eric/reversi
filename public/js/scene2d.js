@@ -23,6 +23,16 @@
   function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
   /** 木紋：light/dark 是兩端顏色 */
+  /** 鏡射成 2×2，讓重複貼圖的接縫消失 */
+  function mirrorTile(src) {
+    const w = src.width, h = src.height, c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+    const g = c.getContext('2d');
+    g.drawImage(src, 0, 0);
+    g.save(); g.translate(w * 2, 0); g.scale(-1, 1); g.drawImage(src, 0, 0); g.restore();
+    g.save(); g.translate(0, h * 2); g.scale(1, -1); g.drawImage(src, 0, 0); g.restore();
+    g.save(); g.translate(w * 2, h * 2); g.scale(-1, -1); g.drawImage(src, 0, 0); g.restore();
+    return c;
+  }
   function woodCanvas(size, light, dark, seed, ringScale) {
     const c = canvas(size, size), g = c.getContext('2d'), img = g.createImageData(size, size), d = img.data;
     for (let y = 0; y < size; y++) {
@@ -90,8 +100,8 @@
     let wood = null, maple = null, walnut = null;
     function ensureTextures() {
       if (wood && wood.size === q.tex) return;
-      wood = { size: q.tex, img: woodCanvas(Math.min(512, q.tex), [62, 40, 24], [42, 27, 16], 11, 0.03) };
-      walnut = woodCanvas(Math.min(512, q.tex), [104, 66, 38], [54, 31, 18], 5, 0.045);
+      wood = { size: q.tex, img: mirrorTile(woodCanvas(Math.min(512, q.tex), [138, 98, 62], [108, 74, 46], 11, 0.03)) };
+      walnut = mirrorTile(woodCanvas(Math.min(512, q.tex), [150, 100, 60], [100, 62, 36], 5, 0.045));
       maple = woodCanvas(q.tex, [226, 184, 120], [182, 130, 74], 3.1, 0.05);
     }
     const spriteOf = up => sprites[(up === BLACK ? 'b' : 'w') + (assist ? 'm' : 'p')];
@@ -122,7 +132,7 @@
       // 桌面
       g.fillStyle = g.createPattern(wood.img, 'repeat'); g.fillRect(0, 0, CW, CH);
       const vg = g.createRadialGradient(CW / 2, CH / 2, Math.min(CW, CH) * 0.3, CW / 2, CH / 2, Math.max(CW, CH) * 0.75);
-      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.5)');
+      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.2)');
       g.fillStyle = vg; g.fillRect(0, 0, CW, CH);
       // 棋盤外框（胡桃木）＋陰影
       const rad = S * 0.022;
@@ -130,7 +140,7 @@
       g.fillStyle = g.createPattern(walnut, 'repeat'); rr(g, X0, Y0, S, S, rad); g.fill(); g.restore();
       g.save(); rr(g, X0, Y0, S, S, rad); g.clip();
       const bev = g.createLinearGradient(X0, Y0, X0 + S, Y0 + S);
-      bev.addColorStop(0, 'rgba(255,225,170,.20)'); bev.addColorStop(0.5, 'rgba(0,0,0,0)'); bev.addColorStop(1, 'rgba(0,0,0,.34)');
+      bev.addColorStop(0, 'rgba(255,225,170,.28)'); bev.addColorStop(0.5, 'rgba(0,0,0,0)'); bev.addColorStop(1, 'rgba(0,0,0,.34)');
       g.fillStyle = bev; g.fillRect(X0, Y0, S, S); g.restore();
       // 楓木棋面
       g.save(); g.beginPath(); g.rect(OX, OY, P, P); g.clip();
@@ -260,8 +270,8 @@
         } else drawDisc(p.x, p.y, d.up, 1, 1, 0, null);
       }
       // 提示與游標
-      ctx.fillStyle = 'rgba(29,90,56,' + (0.45 + 0.35 * pulse) + ')';
-      for (let n = 0; n < legal.length; n++) { const p = center(legal[n]), r = CELL * (reduce ? 0.14 : 0.12 + 0.03 * pulse); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = 'rgba(16,104,58,' + (0.78 + 0.2 * pulse) + ')'; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(1.5, CELL * 0.03);
+      for (let n = 0; n < legal.length; n++) { const p = center(legal[n]), r = CELL * (reduce ? 0.17 : 0.16 + 0.03 * pulse); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
       if (hint >= 0) { const p = center(hint); ctx.strokeStyle = 'rgba(70,225,130,' + (0.6 + 0.4 * pulse) + ')'; ctx.lineWidth = Math.max(3, CELL * 0.08); ctx.beginPath(); ctx.arc(p.x, p.y, CELL * (reduce ? 0.36 : 0.34 + 0.05 * pulse), 0, Math.PI * 2); ctx.stroke(); }
       if (hover >= 0) { drawSquare(hover, 'rgba(255,255,255,.4)', Math.max(2, CELL * 0.04)); }
       if (ghost.i >= 0 && ghost.p) drawDisc(center(ghost.i).x, center(ghost.i).y, ghost.p, 1, 1, 0, 0.55);
