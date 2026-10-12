@@ -89,10 +89,10 @@ input[type="text"]:focus { outline: none; border-color: var(--brass-hi); box-sha
 .btn.big { min-height: 58px; font-size: 19px; padding: 0 28px; border-radius: 16px; }
 .btn[disabled], .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; filter: none; }
 .btn svg { width: 18px; height: 18px; }
-.icon-btn { position: relative; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-hi); background: rgba(88, 62, 38, .94); color: #ffe3a3; display: inline-grid; place-items: center; cursor: pointer; backdrop-filter: blur(6px); box-shadow: 0 3px 10px rgba(0, 0, 0, .4); }
-.icon-btn:hover { background: rgba(120, 84, 50, .96); }
+.icon-btn { position: relative; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-hi); background: linear-gradient(180deg, #f6dd9c, #d3a64a); color: #3a2410; border-color: #fff0c4; display: inline-grid; place-items: center; cursor: pointer; backdrop-filter: blur(6px); box-shadow: 0 0 0 2px rgba(58, 36, 16, .75), 0 3px 10px rgba(0, 0, 0, .45); }
+.icon-btn:hover { filter: brightness(1.08); }
 .icon-btn.small { width: 36px; height: 36px; box-shadow: none; }
-.icon-btn[aria-pressed="true"] { background: var(--brass); color: #231705; }
+.icon-btn[aria-pressed="true"] { background: #8a5a22; color: #fff3d0; }
 .badge { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #e0533f; color: #fff; font: 700 11px/18px var(--font); font-style: normal; text-align: center; }
 
 /* ---------- 浮動介面 ---------- */
@@ -273,3 +273,7 @@ body.reduce-motion * { animation-duration: .01ms !important; transition-duration
 .sb-thumb { width: 100%; border-radius: 4px; background: linear-gradient(90deg, #f0cd82, #c89b3c); box-shadow: 0 0 0 1px rgba(60, 40, 10, .45); cursor: grab; }
 .sb-thumb.drag { cursor: grabbing; filter: brightness(1.15); }
 .sb-host { overscroll-behavior: contain; }
+
+/* 浮在木桌上的控制要夠亮：奶油黃銅底、深色字 */
+.turn-chip { background: linear-gradient(180deg, #f6e4b4, #e0bd6c); color: #3a2410; border-color: #fff0c4; box-shadow: 0 0 0 2px rgba(58, 36, 16, .7), 0 3px 10px rgba(0, 0, 0, .45); }
+.hud-bottom .btn, .hud-bottom .btn.ghost { background: linear-gradient(180deg, #f6dd9c, #d3a64a); color: #3a2410; border-color: #fff0c4; box-shadow: 0 0 0 2px rgba(58, 36, 16, .7), 0 3px 10px rgba(0, 0, 0, .45); text-shadow: none; }
