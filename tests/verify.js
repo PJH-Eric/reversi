@@ -268,6 +268,14 @@ test('server URL 解析：同源／參數／https 擋 http／無效', () => {
   assert.strictEqual(C.resolve('', '', 'file:', 'null').status, 'unset');
 });
 
+test('大廳網址解析：參數優先、僅接受 http(s)／相對路徑', () => {
+  require('../public/js/lobby-link.js'); const L = global.LobbyLink;
+  assert.strictEqual(L.resolve('https://lobby.example/', 'x', 'y'), 'https://lobby.example/');
+  assert.strictEqual(L.resolve('', '../', ''), '../');
+  assert.strictEqual(L.resolve('javascript:alert(1)', '', ''), null);
+  assert.strictEqual(L.resolve('', '', ''), null);
+});
+
 console.log('\n[線上整合]');
 const online = spawnSync(process.execPath, ['--experimental-websocket', path.join(__dirname, 'online-check.js')], { encoding: 'utf8', timeout: 90000 });
 process.stdout.write(online.stdout || '');

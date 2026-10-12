@@ -703,6 +703,16 @@
     show('home');
   });
 
+  /* 返回遊戲大廳（網址來自 Config.lobbyUrl；沒有就不顯示） */
+  if (window.LobbyLink && LobbyLink.url) {
+    $('btn-lobby').hidden = false;
+    $('btn-lobby').addEventListener('click', () => {
+      if (G.screen === 'game' && !window.confirm('離開遊戲並返回遊戲大廳？')) return;
+      try { Net.close(); } catch (e) {}
+      location.href = LobbyLink.url;
+    });
+  }
+
   /* ================= 啟動 ================= */
   function boot() {
     hydrateIcons(document);

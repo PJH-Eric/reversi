@@ -7,6 +7,7 @@
 
   const ICONS = {
     gear: '<path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8Zm8.2 4.4-.1-2 1.8-1.5-1.8-3.1-2.2.8a7.7 7.7 0 0 0-1.7-1l-.4-2.3h-3.6l-.4 2.3c-.6.2-1.2.6-1.7 1l-2.2-.8-1.8 3.1L6 11l-.1 2 .1 1-1.8 1.5 1.8 3.1 2.2-.8c.5.4 1.1.8 1.7 1l.4 2.3h3.6l.4-2.3c.6-.2 1.2-.6 1.7-1l2.2.8 1.8-3.1L18.2 14l.1-1Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+    lobby: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.7"/>',
     home: '<path d="M4 11.5 12 4l8 7.5V20h-5.5v-5.5h-5V20H4v-8.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
     panel: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9.5 4.5v15" stroke="currentColor" stroke-width="1.7"/>',
     bulb: '<path d="M9 18h6m-5 3h4M12 3.5a6 6 0 0 0-3.4 10.9c.6.5.9 1.2.9 2V17h5v-.6c0-.8.3-1.5.9-2A6 6 0 0 0 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
