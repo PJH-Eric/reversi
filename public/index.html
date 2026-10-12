@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#16110d">
+<title>黑白棋</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/latency.css">
+</head>
+<body>
+<div id="app" data-screen="home" data-side="closed">
+
+  <div id="side-backdrop" class="side-backdrop" hidden></div>
+  <aside id="side" aria-label="對局資訊與聊天室">
+    <button id="side-close" class="icon-btn small side-close" type="button" aria-label="收起側欄"><span data-icon="close"></span></button>
+    <section id="summary" aria-label="對局摘要">
+      <h2 class="side-title">對局摘要</h2>
+      <div id="scoreboard" class="scoreboard"></div>
+      <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+      <div id="timer-line" class="timer-line" hidden></div>
+      <div class="side-actions" id="side-actions"></div>
+      <details id="history-box" class="history-box" open>
+        <summary>步數紀錄</summary>
+        <ol id="history" class="history"></ol>
+      </details>
+    </section>
+    <section id="chatbox" class="chatbox" aria-label="聊天室" hidden>
+      <h2 class="side-title">聊天室</h2>
+      <ul id="chat-list" class="chat-list" aria-live="polite"></ul>
+      <div id="chat-quick" class="chat-quick"></div>
+      <form id="chat-form" class="chat-form" autocomplete="off">
+        <input id="chat-input" type="text" maxlength="200" placeholder="輸入訊息…" aria-label="聊天訊息">
+        <button type="submit" class="btn small primary" id="chat-send">送出</button>
+      </form>
+    </section>
+  </aside>
+
+  <main id="view">
+    <canvas id="gl" tabindex="0" aria-label="黑白棋棋盤。可用方向鍵移動游標、Enter 落子，也可以直接點格子。"></canvas>
+
+    <div id="hud-top" class="hud-top">
+      <button id="side-toggle" class="icon-btn" type="button" aria-label="展開或收起對局資訊" aria-expanded="false"><span data-icon="panel"></span><i id="side-badge" class="badge" hidden>0</i></button>
+      <div id="turn-chip" class="turn-chip" hidden></div>
+      <div class="hud-right">
+        <span class="lat-slot"></span>
+        <button id="btn-home" class="icon-btn" type="button" aria-label="回到首頁" hidden><span data-icon="home"></span></button>
+        <button id="btn-settings" class="icon-btn" type="button" aria-label="設定" aria-haspopup="dialog"><span data-icon="gear"></span></button>
+      </div>
+    </div>
+
+    <div id="hud-bottom" class="hud-bottom" hidden>
+      <button class="btn small ghost hint-btn" type="button" id="btn-hint" aria-label="提示：顯示建議的下一步" aria-pressed="false"><span data-icon="bulb"></span><span>提示</span></button>
+    </div>
+
+    <div id="confirm-bar" class="confirm-bar" hidden>
+      <span>再點一次這個位置確認落子</span>
+      <button type="button" class="btn small ghost" id="confirm-cancel">取消</button>
+    </div>
+
+    <section id="room-panel" class="room-panel" hidden aria-label="房間"></section>
+
+    <div id="screens" class="screens">
+      <section id="scr-home" class="card screen" aria-labelledby="home-title"></section>
+      <section id="scr-setup" class="card screen" aria-labelledby="setup-title"></section>
+      <section id="scr-lobby" class="card screen wide" aria-labelledby="lobby-title"></section>
+    </div>
+
+    <div id="result-layer" class="result-layer" hidden></div>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <div id="boot" class="boot" role="status"><div class="boot-disc"></div><p id="boot-text">棋盤準備中…</p></div>
+  </main>
+
+  <div id="modal-root"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/rng.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/latency.js"></script>
+<script src="js/online.js"></script>
+<script src="js/scene2d.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
