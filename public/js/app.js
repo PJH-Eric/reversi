@@ -63,6 +63,7 @@
     app.dataset.inGame = name === 'game' ? '1' : '0';
     ['home', 'setup', 'lobby'].forEach(s => $('scr-' + s).classList.toggle('on', s === name));
     $('btn-home').hidden = name === 'home';
+    $('btn-lobby').hidden = name !== 'home';
     $('screens').hidden = name === 'game';
     $('hud-bottom').hidden = !(name === 'game' && isLocal());
     if (name !== 'game') { scene.setLegal([]); scene.setHint(-1); scene.setSelected(-1); scene.setGhost(-1); scene.setLast(-1); scene.setCursor(-1); $('turn-chip').hidden = true; $('room-panel').hidden = true; $('result-layer').hidden = true; $('confirm-bar').hidden = true; }
@@ -703,15 +704,8 @@
     show('home');
   });
 
-  /* 返回遊戲大廳（網址來自 Config.lobbyUrl；沒有就不顯示） */
-  if (window.LobbyLink && LobbyLink.url) {
-    $('btn-lobby').hidden = false;
-    $('btn-lobby').addEventListener('click', () => {
-      if (G.screen === 'game' && !window.confirm('離開遊戲並返回遊戲大廳？')) return;
-      try { Net.close(); } catch (e) {}
-      location.href = LobbyLink.url;
-    });
-  }
+  /* 左上角「返回遊戲大廳」：只在首頁出現；網址 ?lobby= 優先，否則用與其他遊戲相同的大廳位置 */
+  $('btn-lobby').href = (window.LobbyLink && LobbyLink.url) || 'https://pjh-eric.github.io/game-lobby/';
 
   /* ================= 啟動 ================= */
   function boot() {
