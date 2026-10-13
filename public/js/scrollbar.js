@@ -3,7 +3,7 @@
  */
 (function () {
   'use strict';
-  var SEL = '#summary, .history, .chat-list, .card, .room-list, .room-panel, .modal-body';
+  var SEL = '#summary, .history, .chat-list, .card, .room-list, .room-panel, .modal-body, .result-layer';
   var layer = document.createElement('div');
   layer.id = 'sb-layer'; layer.setAttribute('aria-hidden', 'true');
   var items = new Map(), queued = false;
