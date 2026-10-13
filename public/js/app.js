@@ -384,6 +384,7 @@
   function renderSideActions() {
     const box = $('side-actions'), btns = [];
     if (isLocal()) {
+      btns.push(h('button', { class: 'btn small danger', type: 'button', onclick: resignLocal }, h('span', { html: icon('flag') }), '投降'));
       btns.push(h('button', { class: 'btn small', type: 'button', onclick: restartLocal }, '重新開始'));
       btns.push(h('button', { class: 'btn small ghost', type: 'button', onclick: askLeaveLocal }, h('span', { html: icon('exit') }), '離開'));
     } else if (isOnline() && G.room) {
@@ -392,6 +393,16 @@
       btns.push(h('button', { class: 'btn small ghost', type: 'button', onclick: askLeaveRoom }, h('span', { html: icon('exit') }), '離開房間'));
     }
     box.replaceChildren(...btns);
+  }
+  /* 單機投降：算一場敗績，直接判電腦獲勝 */
+  async function resignLocal() {
+    if (!isLocal() || !G.state || G.state.over || G.resultShown) return;
+    if (!(await confirmDialog('確定投降？', '投降會算一場敗績，直接判電腦獲勝。', '投降', true))) return;
+    if (!isLocal() || !G.state || G.state.over || G.resultShown) return;
+    G.resultShown = true; G.aiToken++;
+    const c = R.count(G.state.board), winner = R.other(G.me);
+    Store.addStats({ games: 1, wins: 0, losses: 1, draws: 0, bestMargin: 0 });
+    showResult({ outcome: 'lose', why: '你選擇投降（目前 ' + c.black + ' 比 ' + c.white + '）', black: c.black, white: c.white, winner });
   }
   async function restartLocal() { if (G.state && !G.state.over && G.hist.length && !(await confirmDialog('重新開始？', '目前這局會作廢。', '重新開始', true))) return; hideResult(); startLocal(G.localCfg); }
   async function askLeaveLocal() { if (G.state && !G.state.over && G.hist.length && !(await confirmDialog('離開這局？', '離開後這局不會計入戰績。', '離開', true))) return; goHome(); }
@@ -698,6 +709,7 @@
   $('side-toggle').addEventListener('click', () => setSide(app.dataset.side !== 'open'));
   $('side-close').addEventListener('click', () => { setSide(false); $('side-toggle').focus(); });
   $('side-backdrop').addEventListener('click', () => setSide(false));
+  $('btn-resign-local').addEventListener('click', resignLocal);
   $('btn-home').addEventListener('click', async () => {
     if (G.screen === 'game') { if (isLocal()) { askLeaveLocal(); } else { askLeaveRoom(); } return; }
     if (G.screen === 'lobby') { Net.close(); G.invite = null; }
