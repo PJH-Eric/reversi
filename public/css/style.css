@@ -97,7 +97,7 @@ input[type="text"]:focus { outline: none; border-color: var(--brass-hi); box-sha
 .icon-btn:focus-visible, .lobby-pill:focus-visible { outline: 3px solid #fff3c4; outline-offset: 2px; }
 .icon-btn svg { width: 24px; height: 24px; }
 /* 左上角「返回遊戲大廳」膠囊（只在首頁），與其他遊戲的返回鈕同位置、同圓角膠囊造型 */
-.lobby-pill { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 16px 0 10px; border-radius: 999px; text-decoration: none; font-weight: 800; font-size: 15px; letter-spacing: .04em; color: #3a2410; background: linear-gradient(180deg, #f6dd9c, #d3a64a); border: 1px solid #fff0c4; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65), inset 0 -3px 5px rgba(120, 76, 16, .28), 0 0 0 2px rgba(58, 36, 16, .75), 0 4px 10px rgba(0, 0, 0, .45); transition: transform .12s, filter .12s; }
+.lobby-pill { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 16px 0 10px; border-radius: 999px; text-decoration: none; font-weight: 800; font-size: 15px; letter-spacing: .04em; color: #2b1800; background: linear-gradient(180deg, #fff3b8, #ffd24d 55%, #f0a91f); border: 1px solid #fffbe0; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 5px rgba(150, 90, 0, .3), 0 0 0 2px rgba(58, 36, 16, .8), 0 0 16px rgba(255, 214, 90, .6), 0 4px 10px rgba(0, 0, 0, .45); transition: transform .12s, filter .12s; }
 .lobby-pill[hidden] { display: none; }
 .lobby-pill:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .lobby-pill:active { transform: translateY(1px) scale(.97); }
@@ -108,7 +108,7 @@ input[type="text"]:focus { outline: none; border-color: var(--brass-hi); box-sha
 .badge { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #e0533f; color: #fff; font: 700 11px/18px var(--font); font-style: normal; text-align: center; }
 
 /* ---------- 浮動介面 ---------- */
-.hud-top { position: absolute; top: calc(10px + var(--safe-t)); left: calc(10px + var(--safe-l)); right: calc(10px + var(--safe-r)); display: flex; align-items: center; gap: 10px; z-index: 20; pointer-events: none; }
+.hud-top { position: absolute; top: calc(10px + var(--safe-t)); left: calc(10px + var(--safe-l)); right: calc(10px + var(--safe-r)); display: flex; align-items: center; gap: 10px; z-index: 30; pointer-events: none; }
 .hud-top > * { pointer-events: auto; }
 .hud-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 #app:not([data-in-game="1"]) #side-toggle { display: none; }
