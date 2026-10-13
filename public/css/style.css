@@ -298,3 +298,9 @@ body.reduce-motion * { animation-duration: .01ms !important; transition-duration
 }
 /* 棋盤下方的投降鈕維持紅色（上面的亮黃規則會把它蓋成黃色） */
 .hud-bottom .btn.danger { background: linear-gradient(180deg, #e0705f, #b04232); color: #fff8f4; border-color: #ffc2b6; text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+
+/* 彈窗在矮螢幕要被限制在畫面內，內容區才會出現捲動（否則彈窗會長到畫面外、按鈕按不到） */
+.veil { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+.veil > .modal { max-height: 100%; min-height: 0; justify-self: center; align-self: center; width: min(520px, 100%); }
+.veil > .modal.small { width: min(400px, 100%); }
+.modal-body { flex: 1 1 auto; min-height: 0; }
