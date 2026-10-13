@@ -289,3 +289,12 @@ body.reduce-motion * { animation-duration: .01ms !important; transition-duration
 /* 浮在木桌上的控制要夠亮：奶油黃銅底、深色字 */
 .turn-chip { background: linear-gradient(180deg, #f6e4b4, #e0bd6c); color: #3a2410; border-color: #fff0c4; box-shadow: 0 0 0 2px rgba(58, 36, 16, .7), 0 3px 10px rgba(0, 0, 0, .45); }
 .hud-bottom .btn, .hud-bottom .btn.ghost { background: linear-gradient(180deg, #f6dd9c, #d3a64a); color: #3a2410; border-color: #fff0c4; box-shadow: 0 0 0 2px rgba(58, 36, 16, .7), 0 3px 10px rgba(0, 0, 0, .45); text-shadow: none; }
+
+/* 設定：選項列在窄螢幕改成「標題＋說明一整列、選項按鈕在下一列」，避免標題被擠成直排 */
+@media (max-width: 560px) {
+  .row:has(.seg) { flex-wrap: wrap; row-gap: 8px; }
+  .row:has(.seg) .row-label { flex: 1 1 100%; }
+  .row:has(.seg) .seg { flex: 1 1 100%; }
+}
+/* 棋盤下方的投降鈕維持紅色（上面的亮黃規則會把它蓋成黃色） */
+.hud-bottom .btn.danger { background: linear-gradient(180deg, #e0705f, #b04232); color: #fff8f4; border-color: #ffc2b6; text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
