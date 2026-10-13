@@ -14,7 +14,7 @@ on:
 env:
   # 遊戲伺服器網址就設在這裡，改這一行即可，不需要去 repo 的 Variables 設定。
   # 實際採用的優先序：手動執行時填的 inputs → repo Variable → 這個預設值。
-  DEFAULT_GAME_SERVER_URL: https://reversi.onrender.com
+  DEFAULT_GAME_SERVER_URL: https://reversi-agj3.onrender.com
 
 permissions:
   contents: read
