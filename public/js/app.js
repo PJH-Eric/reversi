@@ -158,6 +158,7 @@
 
   /* ================= 單機流程 ================= */
   function startLocal(cfg) {
+    GameAnalytics.start({ mode: 'ai', difficulty: cfg.level, players: 2 });
     leaveOnlineQuiet();
     G.mode = 'local'; G.gameId++; G.aiToken++; G.busy = false; G.queue = []; G.room = null; G.resultShown = false; G.resultDismissed = false;
     G.level = cfg.level; G.localCfg = cfg;
@@ -239,6 +240,7 @@
   }
 
   function showResult(info, quiet) {
+    if (!isOnline() || G.me) GameAnalytics.end({ result: info.outcome });
     G.resInfo = info;
     const layer = $('result-layer');
     const online = isOnline(), spec = spectating();
@@ -535,6 +537,7 @@
   function leaveOnlineQuiet() { G.room = null; G.queue = []; G.waitingMove = false; G.gameNo = -1; G.unread = 0; renderBadge(); $('chat-list').replaceChildren(); }
 
   function onRoom(room) {
+    GameAnalytics.sync(room.status, room.id + '|' + room.game.number, { mode: 'online', players: 2, spectator: room.you.role !== 'player' });
     const first = !G.room || G.room.id !== room.id;
     G.room = room; if (room.serverNow) G.skew = room.serverNow - Date.now();
     clearInviteParams(); G.invite = null; G.inviteError = '';

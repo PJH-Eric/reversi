@@ -12,7 +12,14 @@
     emit(type, a) { (handlers[type] || []).slice().forEach(f => { try { f(a); } catch (e) { console.error(e); } }); },
     /* 狀態只送代碼與數字參數（n），顯示文字由前端依語言翻譯 */
     setStatus(s, n) { this.status = s; this.statusN = n == null ? null : n; this.emit('status', { status: s, n: this.statusN }); },
-    send(o) { if (this.ws && this.ws.readyState === 1) { this.ws.send(JSON.stringify(o)); return true; } return false; },
+    send(o) {
+      if (this.ws && this.ws.readyState === 1) {
+        this.ws.send(JSON.stringify(o));
+        if (root.GameAnalytics) root.GameAnalytics.roomRequest(o);
+        return true;
+      }
+      return false;
+    },
 
     connect(name) {
       if (!this.enabled) { this.setStatus('disabled'); return; }
@@ -53,6 +60,7 @@
         if (m.type === 'hb') { this.send({ type: 'hb' }); return; }
         if (m.type === 'pong') { this.rtt = Date.now() - m.t; root.Latency.set(this.rtt); this.emit('rtt', this.rtt); return; }
         if (m.type === 'welcome') { this.personId = m.personId; this.name = m.name; this.reconnectMs = m.reconnectMs || 30000; this.welcomed = true; this.retry = 0; this.setStatus('open'); }
+        if (root.GameAnalytics) root.GameAnalytics.roomResponse(m.type, !!m.room);
         this.emit('msg', m); this.emit(m.type, m);
       };
       ws.onclose = () => { if (this.ws !== ws) return; this.ws = null; this.stopTimers(); root.Latency.set(null); this.emit('dropped'); if (this.wantOn) this.scheduleRetry(); else { this.setStatus('closed'); root.Latency.off(); } };

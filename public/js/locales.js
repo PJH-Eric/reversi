@@ -7,8 +7,8 @@
   'use strict';
   var zh = {
     'lang.switchTo': '切換語言為 English',
-    'doc.title': '黑白棋',
-    'doc.desc': '黑白棋：木質棋盤與大理石棋子的 2D 畫面，單機五段電腦與線上 1 對 1（含觀戰、邀請連結、聊天室）',
+    'doc.title': "黑白棋｜免費線上雙人對弈・五段電腦",
+    'doc.desc': "免費免下載的黑白棋，在木質棋盤上夾住對手棋子，翻轉顏色爭取最多領地。五段電腦難度從幼幼班到進階，也能開房間邀朋友雙人對弈、觀戰聊天，手機平板皆可操作。",
     'common.back': '返回', 'common.cancel': '取消', 'common.on': '開', 'common.off': '關', 'common.auto': '自動',
     'common.ok': '確定', 'common.notNow': '先不要', 'common.close': '關閉', 'common.join': '加入', 'common.watch': '觀戰',
 

@@ -4,6 +4,8 @@
  * 最後會順便跑 tests/online-check.js（真的起一個伺服器，用 WebSocket 打一局）。
  */
 'use strict';
+
+require('./seo.js');
 const assert = require('assert');
 const path = require('path');
 const { spawnSync } = require('child_process');
