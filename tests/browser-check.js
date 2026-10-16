@@ -67,7 +67,11 @@ const inView = async (page, sel, tag) => {
       const c = await ctx(vp, vp[3]), p = await c.newPage(); track(p, vp[0]);
       await p.goto(base); await p.waitForSelector('#scr-home.on'); await sleep(500);
       await noOverflow(p, vp[0] + ' 首頁'); await inView(p, '#btn-settings', vp[0]); await inView(p, '#btn-lang', vp[0] + ' 語言鈕'); await inView(p, '#scr-home .btn.primary', vp[0]);
-      assert.strictEqual(await p.evaluate(() => document.getElementById('btn-settings').nextElementSibling.id), 'btn-lang', '語言鈕要緊貼在設定鈕旁');
+      assert.strictEqual(await p.evaluate(() => document.getElementById('btn-settings').previousElementSibling.id), 'btn-lang', '語言鈕要在同一工具列緊貼設定鈕左側');
+      await p.click('#btn-lang');
+      assert.strictEqual(await p.getAttribute('#btn-lang', 'aria-expanded'), 'true', '點語言鈕展開選單');
+      await p.keyboard.press('Escape');
+      assert.strictEqual(await p.getAttribute('#btn-lang', 'aria-expanded'), 'false', 'Escape 收起語言選單');
       await p.screenshot({ path: path.join(SHOTS, vp[0] + '-1home.png') });
       await p.click('#scr-home .btn.primary'); await p.waitForSelector('#scr-setup.on'); await sleep(250);
       await noOverflow(p, vp[0] + ' 設定頁'); await p.screenshot({ path: path.join(SHOTS, vp[0] + '-2setup.png') });
