@@ -81,7 +81,7 @@ test('隨機對局 400 局：棋子數守恆、一定收斂、replay 能還原',
 
 console.log('\n[電腦]');
 const LV = AI.LEVELS.map(l => l.id);
-test('五段難度都在，名稱正確', () => { assert.deepStrictEqual(LV, ['toddler', 'easy', 'normal', 'hard', 'myth']); assert.deepStrictEqual(AI.LEVELS.map(l => l.name), ['幼幼班', '簡單', '普通', '困難', '神話']); });
+test('五段難度都在（名稱在字典，與語系無關）', () => { assert.deepStrictEqual(LV, ['toddler', 'easy', 'normal', 'hard', 'myth']); });
 test('每個難度選的步都合法（各 60 個局面）', () => {
   for (const lv of ['toddler', 'easy', 'normal', 'hard']) {
     const rng = RNG.create('legal-' + lv);
@@ -244,6 +244,17 @@ test('每步限時：超時由系統代下一步', () => {
   clock.t += 31000; k.hub.tick();
   assert.strictEqual(room.game.moves.length, 1);
 });
+test('伺服器訊息只送代碼與參數，不含顯示文字', () => {
+  const clock = { t: 1000 }, k = twoPlayers(clock);
+  const hasZh = o => /[\u4e00-\u9fff]/.test(JSON.stringify(o));
+  const toasts = k.log.filter(x => x.msg && x.msg.type === 'toast');
+  assert.ok(toasts.length > 0 && toasts.every(x => x.msg.code && !('text' in x.msg)), 'toast 要有 code、沒有 text');
+  assert.ok(!k.log.some(x => x.msg && (x.msg.type === 'toast' || x.msg.type === 'error') && (hasZh(x.msg.code) || 'text' in x.msg)), 'toast／error 只能有 code 與 params（暱稱在 params 內可以是中文）');
+  k.hub.setReady(k.a, true); k.hub.setReady(k.b, true);
+  k.hub.resign(k.a);
+  assert.deepStrictEqual([k.room.result.reason, k.room.result.code, k.room.result.params.n], ['resign', 'resigned', '甲']);
+  assert.ok(!('text' in k.room.result));
+});
 test('聊天：消毒、限長、限速', () => {
   const clock = { t: 1000 }, k = twoPlayers(clock);
   k.hub.chat(k.a, '<b>嗨</b>' + 'x'.repeat(300)); const m = k.last('A', 'chat').msg;
@@ -275,6 +286,11 @@ test('大廳網址解析：參數優先、僅接受 http(s)／相對路徑', () 
   assert.strictEqual(L.resolve('javascript:alert(1)', '', ''), null);
   assert.strictEqual(L.resolve('', '', ''), null);
 });
+
+console.log('\n[多語系字典]');
+const i18nRun = spawnSync(process.execPath, [path.join(__dirname, 'i18n.js')], { encoding: 'utf8', timeout: 30000 });
+process.stdout.write(i18nRun.stdout || '');
+if (i18nRun.status !== 0) { failed++; console.log('  ✗ i18n 字典檢查失敗\n' + (i18nRun.stderr || '')); } else passed++;
 
 console.log('\n[線上整合]');
 const online = spawnSync(process.execPath, ['--experimental-websocket', path.join(__dirname, 'online-check.js')], { encoding: 'utf8', timeout: 90000 });

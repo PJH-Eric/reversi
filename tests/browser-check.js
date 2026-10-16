@@ -16,6 +16,8 @@ if (!pw) { console.log('（略過）沒有安裝 playwright，無法跑瀏覽器
 const assert = require('assert');
 const { server } = require('../server.js');
 const SHOTS = path.join(__dirname, 'shots'); fs.mkdirSync(SHOTS, { recursive: true });
+/* 語系：預設用 zh-TW 瀏覽器；CHECK_LANG=en 改用 en-US 再跑一次。斷言一律走字典 key，與語系無關 */
+const LOCALE = process.env.CHECK_LANG === 'en' ? 'en-US' : 'zh-TW';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let n = 0; const ok = m => console.log('  ✓ ' + (++n) + '. ' + m);
 
@@ -57,14 +59,15 @@ const inView = async (page, sel, tag) => {
   const browser = await pw.chromium.launch();
   const errors = [];
   const track = (page, tag) => { page.on('pageerror', e => errors.push(tag + ': ' + e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(tag + ' console: ' + m.text()); }); };
-  async function ctx(vp, touch) { const c = await browser.newContext({ viewport: { width: vp[1], height: vp[2] }, hasTouch: !!touch, isMobile: !!touch, deviceScaleFactor: 1 }); await c.addInitScript(FAST); return c; }
+  async function ctx(vp, touch) { const c = await browser.newContext({ viewport: { width: vp[1], height: vp[2] }, hasTouch: !!touch, isMobile: !!touch, deviceScaleFactor: 1, locale: LOCALE }); await c.addInitScript(FAST); return c; }
 
   try {
     /* ---------- 1. 各種尺寸 ---------- */
     for (const vp of VIEWPORTS) {
       const c = await ctx(vp, vp[3]), p = await c.newPage(); track(p, vp[0]);
       await p.goto(base); await p.waitForSelector('#scr-home.on'); await sleep(500);
-      await noOverflow(p, vp[0] + ' 首頁'); await inView(p, '#btn-settings', vp[0]); await inView(p, '#scr-home .btn.primary', vp[0]);
+      await noOverflow(p, vp[0] + ' 首頁'); await inView(p, '#btn-settings', vp[0]); await inView(p, '#btn-lang', vp[0] + ' 語言鈕'); await inView(p, '#scr-home .btn.primary', vp[0]);
+      assert.strictEqual(await p.evaluate(() => document.getElementById('btn-settings').nextElementSibling.id), 'btn-lang', '語言鈕要緊貼在設定鈕旁');
       await p.screenshot({ path: path.join(SHOTS, vp[0] + '-1home.png') });
       await p.click('#scr-home .btn.primary'); await p.waitForSelector('#scr-setup.on'); await sleep(250);
       await noOverflow(p, vp[0] + ' 設定頁'); await p.screenshot({ path: path.join(SHOTS, vp[0] + '-2setup.png') });
@@ -93,7 +96,7 @@ const inView = async (page, sel, tag) => {
       await playUntilOver(p, '單機', 120000);
       await p.waitForSelector('#result-layer:not([hidden]) .result-card', { timeout: 6000 });
       const btns = await p.$$eval('#result-layer .btn', els => els.map(e => e.textContent.trim()));
-      assert.deepStrictEqual(btns, ['再來一局', '回到房間', '回到首頁']); ok('結算 overlay：疊在棋盤上、有「再來一局／回到房間／回到首頁」');
+      assert.deepStrictEqual(btns, await p.evaluate(() => ['result.again', 'result.toRoom', 'result.toHome'].map(k => I18N.t(k)))); ok('結算 overlay：疊在棋盤上、有「再來一局／回到房間／回到首頁」');
       assert.ok(await p.evaluate(() => __rv.scene.debug().discs >= 4), '棋盤仍在背景');
       await p.screenshot({ path: path.join(SHOTS, 'local-result.png') });
       const sc = await p.evaluate(() => { const c = Rules.count(__rv.G.state.board); return c; });
@@ -188,7 +191,7 @@ const inView = async (page, sel, tag) => {
       assert.ok(await B.isVisible('#room-panel')); ok('認輸後「回到房間」：關掉 overlay、顯示房間面板');
       await A.evaluate(() => document.querySelector('#room-panel .room-actions .btn.ghost').click()); await A.waitForFunction(() => __rv.G.screen === 'lobby');
       await B.evaluate(() => document.querySelector('#room-panel .room-actions .btn.ghost').click()); await B.waitForFunction(() => __rv.G.screen === 'lobby');
-      await C.waitForSelector('#modal-root .modal'); assert.ok((await C.textContent('#modal-root .modal')).includes('房間已經結束')); ok('玩家都離開 → 房間關閉，觀戰者看到「房間已結束」');
+      await C.waitForSelector('#modal-root .modal'); assert.ok((await C.textContent('#modal-root .modal')).includes(await C.evaluate(() => I18N.t('closed.ended')))); ok('玩家都離開 → 房間關閉，觀戰者看到「房間已結束」');
       await ca.close(); await cb.close(); await cc.close();
     }
 

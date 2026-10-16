@@ -30,7 +30,7 @@ const MIME = {
 
 function sendFile(res, file) {
   fs.readFile(file, (err, buf) => {
-    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('找不到這個檔案'); return; }
+    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Not found'); return; }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     res.end(buf);
   });
@@ -109,7 +109,7 @@ const server = http.createServer((req, res) => {
   }
   if (url === '/') url = '/index.html';
   const file = path.join(ROOT, path.normalize(url).replace(/^([/\\])+/, ''));
-  if (!file.startsWith(ROOT)) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('不可以跑出 public 目錄'); return; }
+  if (!file.startsWith(ROOT)) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Forbidden'); return; }
   sendFile(res, file);
 });
 
@@ -148,7 +148,7 @@ ws.attach(server, {
         handle(person, msg);
       } catch (e) {
         console.error('[proto] ' + (msg && msg.type) + ' 出錯：', e && e.stack || e);
-        io.send(person.id, { type: 'error', text: '伺服器處理這個動作時出錯了' });
+        io.send(person.id, { type: 'error', code: 'server', params: {} });
       }
     });
 

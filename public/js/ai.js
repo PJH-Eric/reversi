@@ -16,13 +16,8 @@
 
   const { BLACK, WHITE, SIZE, other, flipsFor } = R;
 
-  const LEVELS = [
-    { id: 'toddler', name: '幼幼班', desc: '剛學黑白棋也能贏，電腦會手下留情' },
-    { id: 'easy', name: '簡單', desc: '只看眼前吃最多，偶爾失手' },
-    { id: 'normal', name: '普通', desc: '懂得搶角落、避開危險格' },
-    { id: 'hard', name: '困難', desc: '會算行動力與殘局，不好贏' },
-    { id: 'myth', name: '神話', desc: '深度搜尋加殘局窮舉，幾乎不犯錯' }
-  ];
+  /* 難度只放代碼；顯示名稱與說明在 locales.js（lv.<id>.name / lv.<id>.desc） */
+  const LEVELS = [{ id: 'toddler' }, { id: 'easy' }, { id: 'normal' }, { id: 'hard' }, { id: 'myth' }];
 
   /* 位置權重：角落 +、角落旁（C 格、X 格）−、邊 + */
   const W = [

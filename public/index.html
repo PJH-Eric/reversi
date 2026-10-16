@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" data-i18n-title="doc.title">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#16110d">
 <title>黑白棋</title>
+<meta name="description" content="黑白棋：木質棋盤與大理石棋子的 2D 畫面，單機五段電腦與線上 1 對 1（含觀戰、邀請連結、聊天室）" data-i18n-content="doc.desc">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/latency.css">
 </head>
@@ -12,55 +13,55 @@
 <div id="app" data-screen="home" data-side="closed">
 
   <div id="side-backdrop" class="side-backdrop" hidden></div>
-  <aside id="side" aria-label="對局資訊與聊天室">
-    <button id="side-close" class="icon-btn small side-close" type="button" aria-label="收起側欄"><span data-icon="close"></span></button>
-    <section id="summary" aria-label="對局摘要">
-      <h2 class="side-title">對局摘要</h2>
+  <aside id="side" aria-label="對局資訊與聊天室" data-i18n-attr="aria-label=side.aria">
+    <button id="side-close" class="icon-btn small side-close" type="button" aria-label="收起側欄" data-i18n-attr="aria-label=side.close"><span data-icon="close"></span></button>
+    <section id="summary" aria-label="對局摘要" data-i18n-attr="aria-label=side.summary">
+      <h2 class="side-title" data-i18n="side.summary">對局摘要</h2>
       <div id="scoreboard" class="scoreboard"></div>
       <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
       <div id="timer-line" class="timer-line" hidden></div>
       <div class="side-actions" id="side-actions"></div>
       <details id="history-box" class="history-box" open>
-        <summary>步數紀錄</summary>
+        <summary data-i18n="side.history">步數紀錄</summary>
         <ol id="history" class="history"></ol>
       </details>
     </section>
-    <section id="chatbox" class="chatbox" aria-label="聊天室" hidden>
-      <h2 class="side-title">聊天室</h2>
+    <section id="chatbox" class="chatbox" aria-label="聊天室" data-i18n-attr="aria-label=side.chat" hidden>
+      <h2 class="side-title" data-i18n="side.chat">聊天室</h2>
       <ul id="chat-list" class="chat-list" aria-live="polite"></ul>
       <div id="chat-quick" class="chat-quick"></div>
       <form id="chat-form" class="chat-form" autocomplete="off">
-        <input id="chat-input" type="text" maxlength="200" placeholder="輸入訊息…" aria-label="聊天訊息">
-        <button type="submit" class="btn small primary" id="chat-send">送出</button>
+        <input id="chat-input" type="text" maxlength="200" placeholder="輸入訊息…" aria-label="聊天訊息" data-i18n-attr="placeholder=chat.placeholder;aria-label=chat.aria">
+        <button type="submit" class="btn small primary" id="chat-send" data-i18n="chat.send">送出</button>
       </form>
     </section>
   </aside>
 
   <main id="view">
-    <canvas id="gl" tabindex="0" aria-label="黑白棋棋盤。可用方向鍵移動游標、Enter 落子，也可以直接點格子。"></canvas>
+    <canvas id="gl" tabindex="0" aria-label="黑白棋棋盤。可用方向鍵移動游標、Enter 落子，也可以直接點格子。" data-i18n-attr="aria-label=board.aria"></canvas>
 
     <div id="hud-top" class="hud-top">
-      <a id="btn-lobby" class="lobby-pill" href="#" aria-label="返回遊戲大廳" hidden><span data-icon="back"></span><span class="lobby-pill-text">遊戲大廳</span></a>
-      <button id="side-toggle" class="icon-btn" type="button" aria-label="展開或收起對局資訊" aria-expanded="false"><span data-icon="panel"></span><i id="side-badge" class="badge" hidden>0</i></button>
+      <a id="btn-lobby" class="lobby-pill" href="#" aria-label="返回遊戲大廳" data-i18n-attr="aria-label=lobbyPill.aria" hidden><span data-icon="back"></span><span class="lobby-pill-text" data-i18n="lobbyPill.text">遊戲大廳</span></a>
+      <button id="side-toggle" class="icon-btn" type="button" aria-label="展開或收起對局資訊" data-i18n-attr="aria-label=hud.panelToggle" aria-expanded="false"><span data-icon="panel"></span><i id="side-badge" class="badge" hidden>0</i></button>
       <div id="turn-chip" class="turn-chip" hidden></div>
       <div class="hud-right">
         <span class="lat-slot"></span>
-        <button id="btn-home" class="icon-btn" type="button" aria-label="回到首頁" hidden><span data-icon="home"></span></button>
-        <button id="btn-settings" class="icon-btn" type="button" aria-label="設定" aria-haspopup="dialog"><span data-icon="gear"></span></button>
+        <button id="btn-home" class="icon-btn" type="button" aria-label="回到首頁" data-i18n-attr="aria-label=hud.home" hidden><span data-icon="home"></span></button>
+        <button id="btn-settings" class="icon-btn" type="button" aria-label="設定" data-i18n-attr="aria-label=hud.settings" aria-haspopup="dialog"><span data-icon="gear"></span></button>
       </div>
     </div>
 
     <div id="hud-bottom" class="hud-bottom" hidden>
-      <button class="btn small ghost hint-btn" type="button" id="btn-hint" aria-label="提示：顯示建議的下一步" aria-pressed="false"><span data-icon="bulb"></span><span>提示</span></button>
-      <button class="btn small danger" type="button" id="btn-resign-local" aria-label="投降：直接判電腦獲勝"><span data-icon="flag"></span><span>投降</span></button>
+      <button class="btn small ghost hint-btn" type="button" id="btn-hint" aria-label="提示：顯示建議的下一步" data-i18n-attr="aria-label=hud.hintAria" aria-pressed="false"><span data-icon="bulb"></span><span data-i18n="hud.hint">提示</span></button>
+      <button class="btn small danger" type="button" id="btn-resign-local" aria-label="投降：直接判電腦獲勝" data-i18n-attr="aria-label=hud.resignAria"><span data-icon="flag"></span><span data-i18n="hud.resign">投降</span></button>
     </div>
 
     <div id="confirm-bar" class="confirm-bar" hidden>
-      <span>再點一次這個位置確認落子</span>
-      <button type="button" class="btn small ghost" id="confirm-cancel">取消</button>
+      <span data-i18n="hud.confirmBar">再點一次這個位置確認落子</span>
+      <button type="button" class="btn small ghost" id="confirm-cancel" data-i18n="common.cancel">取消</button>
     </div>
 
-    <section id="room-panel" class="room-panel" hidden aria-label="房間"></section>
+    <section id="room-panel" class="room-panel" hidden aria-label="房間" data-i18n-attr="aria-label=room.panelAria"></section>
 
     <div id="screens" class="screens">
       <section id="scr-home" class="card screen" aria-labelledby="home-title"></section>
@@ -70,12 +71,14 @@
 
     <div id="result-layer" class="result-layer" hidden></div>
     <div id="toasts" class="toasts" aria-live="polite"></div>
-    <div id="boot" class="boot" role="status"><div class="boot-disc"></div><p id="boot-text">棋盤準備中…</p></div>
+    <div id="boot" class="boot" role="status"><div class="boot-disc"></div><p id="boot-text" data-i18n="boot.text">棋盤準備中…</p></div>
   </main>
 
   <div id="modal-root"></div>
 </div>
 
+<script src="js/i18n.js"></script>
+<script src="js/locales.js"></script>
 <script src="js/config.js"></script>
 <script src="js/lobby-link.js"></script>
 <script src="js/storage.js"></script>

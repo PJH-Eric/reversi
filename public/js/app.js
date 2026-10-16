@@ -8,16 +8,20 @@
   const R = Rules, BLACK = R.BLACK, WHITE = R.WHITE;
   const $ = id => document.getElementById(id);
   const app = $('app'), glEl = $('gl');
-  const COLOR_NAME = { 1: '黑棋', 2: '白棋' };
+  const T = (k, p, f) => I18N.t(k, p, f);
+  const COLOR_NAME = { get 1() { return T('color.black'); }, get 2() { return T('color.white'); } };
+  /* 隨機暱稱屬於玩家資料（寫入後不翻譯） */
   const ADJ = ['開心', '勇敢', '機靈', '安靜', '閃亮', '溫柔', '神秘', '迷糊', '大方', '勤勞'];
   const ANI = ['小熊', '小貓', '柴犬', '企鵝', '狐狸', '海獺', '貓頭鷹', '小鹿', '兔子', '浣熊'];
-  const randomName = () => ADJ[(Math.random() * ADJ.length) | 0] + ANI[(Math.random() * ANI.length) | 0];
-  const PHRASES = ['好棋！', '再來一局', '等我一下', '哈哈', '你好～'];
+  const randomName = () => I18N.lang === 'en'
+    ? ['Cozy', 'Brave', 'Quick', 'Sunny'][(Math.random() * 4) | 0] + ' ' + ['Fox', 'Shiba', 'Bunny', 'Otter'][(Math.random() * 4) | 0]
+    : ADJ[(Math.random() * ADJ.length) | 0] + ANI[(Math.random() * ANI.length) | 0];
+  const phrases = () => [1, 2, 3, 4, 5].map(i => T('chat.p' + i));
   const LEVEL_STARS = { toddler: '★', easy: '★★', normal: '★★★', hard: '★★★★', myth: '★★★★★' };
 
   /* ---------- 全域狀態 ---------- */
   const G = {
-    screen: 'home', mode: null, state: null, me: BLACK, names: { 1: '黑棋', 2: '白棋' },
+    screen: 'home', mode: null, state: null, me: BLACK, names: { 1: T('color.black'), 2: T('color.white') },
     level: 'easy', busy: false, queue: [], applied: 0, gameId: 0, aiToken: 0, rng: RNG.create(RNG.newSeed()),
     hintOn: false, selected: -1, cursor: -1, waitingMove: false, localCfg: null,
     room: null, skew: 0, gameNo: -1, resultShown: false, resultDismissed: false, lobby: [], invite: null, inviteError: '',
@@ -33,6 +37,43 @@
   const isLocal = () => G.mode === 'local';
   const isOnline = () => G.mode === 'online';
   const spectating = () => isOnline() && G.room && G.room.you.role !== 'player';
+
+  const cname = c => T(c === BLACK ? 'color.black' : 'color.white');
+  const limitOpts = () => [{ value: 0, label: T('lobby.noLimit') }, { value: 30, label: T('lobby.sec', { n: 30 }) }, { value: 60, label: T('lobby.sec', { n: 60 }) }];
+  /* 伺服器只送代碼與參數（toast / error / result.code），這裡依語言翻譯；沒有名字時用「有人／玩家」 */
+  const srvParams = p => { const o = Object.assign({}, p || {}); o.n = o.n == null ? T('srv.someone') : o.n; return o; };
+  function srvToast(m) {
+    if (!m || !m.code) return '';
+    const p = m.params || {};
+    if (m.code === 'timeout') return T('srv.timeout', { n: p.n == null ? T('srv.aPlayer') : p.n });
+    return T('srv.' + m.code, srvParams(p)) + (p.invited ? T('srv.viaInvite') : '');
+  }
+  const srvError = m => (m && m.code) ? T('srv.err.' + m.code, null, T('srv.err.server')) : '';
+  function resultText(res) { return res.reason === 'normal' || !res.code ? T('result.score', { b: res.black, w: res.white }) : T('srv.' + res.code, srvParams(res.params)); }
+  /* 連線狀態文字（online.js 只提供狀態代碼與數字） */
+  function netLabel() {
+    const s = Net.status, n = Net.statusN;
+    if (s === 'disabled') return T('net.disabled');
+    if (s === 'failed') return T('net.failed');
+    if (s === 'connecting') return T('net.connecting');
+    if (s === 'waking') return n ? T('net.wakingN', { s: n }) : T('net.waking');
+    if (s === 'retrying') return T('net.retrying', { n: n || 1 });
+    return '';
+  }
+  function refreshNames() {
+    if (isLocal() && G.state) { G.names = {}; G.names[G.me] = nick(); G.names[R.other(G.me)] = T('ai.name', { lv: T('lv.' + G.level + '.name') }); }
+    else if (isOnline() && G.room) syncNames();
+  }
+  /* 延遲徽章（latency.js 內建中文）：每次重繪後補上翻譯 */
+  function fixLat() {
+    document.querySelectorAll('.lat:not(.hidden)').forEach(el => {
+      const ms = Latency.ms;
+      if (ms == null) { el.setAttribute('aria-label', T('lat.ariaConnecting')); const tx = el.querySelector('.ms-text'); if (tx) tx.textContent = T('lat.connecting'); }
+      else el.setAttribute('aria-label', T('lat.aria', { ms: ms }));
+      el.title = T('lat.title');
+    });
+  }
+  ['set', 'off', 'refresh'].forEach(k => { const o = Latency[k]; Latency[k] = function () { const r = o.apply(this, arguments); fixLat(); return r; }; });
   function resolveQuality() { const q = Store.get('quality'); return q === 'auto' ? (window.matchMedia('(pointer: coarse)').matches ? 'mid' : 'high') : q; }
 
   /* ================= 棋盤畫面（Canvas 2D）================= */
@@ -88,31 +129,31 @@
     const s = Store.get('stats'), box = $('scr-home');
     const online = Net.enabled;
     box.replaceChildren(
-      h('h1', { id: 'home-title' }, '黑白', h('span', { class: 'b' }), h('span', { class: 'w' }), '棋'),
-      h('p', { class: 'sub' }, '翻轉棋子，把整盤染成你的顏色'),
+      h('h1', { id: 'home-title' }, T('home.title1'), h('span', { class: 'b' }), h('span', { class: 'w' }), T('home.title2')),
+      h('p', { class: 'sub' }, T('home.sub')),
       h('div', { class: 'menu' },
-        h('button', { class: 'btn primary big', type: 'button', onclick: () => show('setup') }, '一個人玩'),
-        h('button', { class: 'btn big', type: 'button', disabled: !online, 'aria-disabled': String(!online), onclick: () => online && show('lobby') }, '跟別人玩'),
-        h('button', { class: 'btn ghost big', type: 'button', onclick: openHow }, '怎麼玩')),
-      h('p', { class: 'foot-note' }, online ? ('單機戰績　勝 ' + s.wins + '　負 ' + s.losses + '　和 ' + s.draws) : '目前沒有設定伺服器，只能玩單機　·　單機戰績 勝 ' + s.wins + '　負 ' + s.losses + '　和 ' + s.draws));
+        h('button', { class: 'btn primary big', type: 'button', onclick: () => show('setup') }, T('home.solo')),
+        h('button', { class: 'btn big', type: 'button', disabled: !online, 'aria-disabled': String(!online), onclick: () => online && show('lobby') }, T('home.online')),
+        h('button', { class: 'btn ghost big', type: 'button', onclick: openHow }, T('home.how'))),
+      h('p', { class: 'foot-note' }, T(online ? 'home.statsOnline' : 'home.statsOffline', { w: s.wins, l: s.losses, d: s.draws })));
   }
 
   /* ---------- 單機設定 ---------- */
   function renderSetup() {
     const box = $('scr-setup');
     const cfg = G.localCfg = G.localCfg || { level: Store.get('lastLevel'), color: Store.get('lastColor'), hint: Store.get('hintOn') };
-    const lv = Segmented('電腦難度', AI.LEVELS.map(l => ({ value: l.id, label: h('span', { class: 'lv' }, h('b', null, l.name), h('small', null, l.desc), h('span', { class: 'stars' }, LEVEL_STARS[l.id])) })), () => cfg.level, v => { cfg.level = v; Store.set('lastLevel', v); }, 'levels-seg');
-    const col = Segmented('你要執哪一色', [{ value: 'black', label: '黑棋', sub: '先手' }, { value: 'white', label: '白棋', sub: '後手' }, { value: 'random', label: '隨機' }], () => cfg.color, v => { cfg.color = v; Store.set('lastColor', v); });
-    const hint = Segmented('提示', [{ value: 'auto', label: '自動', sub: '幼幼班開啟' }, { value: 'on', label: '開' }, { value: 'off', label: '關' }], () => cfg.hint, v => { cfg.hint = v; Store.set('hintOn', v); });
+    const lv = Segmented(T('setup.level'), AI.LEVELS.map(l => ({ value: l.id, label: h('span', { class: 'lv' }, h('b', null, T('lv.' + l.id + '.name')), h('small', null, T('lv.' + l.id + '.desc')), h('span', { class: 'stars' }, LEVEL_STARS[l.id])) })), () => cfg.level, v => { cfg.level = v; Store.set('lastLevel', v); }, 'levels-seg');
+    const col = Segmented(T('setup.colorAria'), [{ value: 'black', label: T('color.black'), sub: T('setup.first') }, { value: 'white', label: T('color.white'), sub: T('setup.second') }, { value: 'random', label: T('setup.random') }], () => cfg.color, v => { cfg.color = v; Store.set('lastColor', v); });
+    const hint = Segmented(T('setup.hintAria'), [{ value: 'auto', label: T('common.auto'), sub: T('setup.autoSub') }, { value: 'on', label: T('common.on') }, { value: 'off', label: T('common.off') }], () => cfg.hint, v => { cfg.hint = v; Store.set('hintOn', v); });
     box.replaceChildren(
-      h('h2', { class: 'title', id: 'setup-title' }, '單機對戰'),
-      h('p', { class: 'sub', style: 'text-align:left;margin-top:0' }, '選好難度與顏色就能開始。'),
-      h('div', { class: 'sec-title' }, '電腦難度'), lv,
-      h('div', { class: 'sec-title' }, '你的顏色'), col,
-      h('div', { class: 'sec-title' }, '提示（標出建議的位置）'), hint,
+      h('h2', { class: 'title', id: 'setup-title' }, T('setup.title')),
+      h('p', { class: 'sub', style: 'text-align:left;margin-top:0' }, T('setup.sub')),
+      h('div', { class: 'sec-title' }, T('setup.level')), lv,
+      h('div', { class: 'sec-title' }, T('setup.color')), col,
+      h('div', { class: 'sec-title' }, T('setup.hintTitle')), hint,
       h('div', { class: 'menu', style: 'grid-template-columns:1fr 2fr;margin-top:20px' },
-        h('button', { class: 'btn', type: 'button', onclick: () => show('home') }, '返回'),
-        h('button', { class: 'btn primary', type: 'button', onclick: () => startLocal(cfg) }, '開始遊戲')));
+        h('button', { class: 'btn', type: 'button', onclick: () => show('home') }, T('common.back')),
+        h('button', { class: 'btn primary', type: 'button', onclick: () => startLocal(cfg) }, T('setup.start'))));
   }
 
   /* ================= 單機流程 ================= */
@@ -122,8 +163,7 @@
     G.level = cfg.level; G.localCfg = cfg;
     const color = cfg.color === 'random' ? (Math.random() < 0.5 ? BLACK : WHITE) : cfg.color === 'white' ? WHITE : BLACK;
     G.me = color;
-    const lvName = AI.LEVELS.find(l => l.id === G.level).name;
-    G.names = {}; G.names[color] = nick(); G.names[R.other(color)] = lvName + '電腦';
+    G.names = {}; G.names[color] = nick(); G.names[R.other(color)] = T('ai.name', { lv: T('lv.' + G.level + '.name') });
     G.state = R.newGame(); G.hist = [];
     G.hintOn = cfg.hint === 'on' || (cfg.hint === 'auto' && G.level === 'toddler');
     $('btn-hint').setAttribute('aria-pressed', String(G.hintOn));
@@ -133,7 +173,7 @@
     scene.sync(G.state.board); applyCameraSide(true);
     Sound.play('start');
     fullRefresh();
-    toast('你執' + COLOR_NAME[color] + (color === BLACK ? '，先下！' : '，電腦先下'));
+    toast(T(color === BLACK ? 'toast.youBlack' : 'toast.youWhite'));
     maybeAI();
   }
 
@@ -175,7 +215,7 @@
   function afterMove(meta) {
     if (meta.passed) {
       const who = G.names[meta.passed] || COLOR_NAME[meta.passed];
-      toast(who + ' 沒有可下的位置，跳過這回合'); Sound.play('pass');
+      toast(T('toast.pass', { who: who })); Sound.play('pass');
     }
     if (isOnline()) { pumpQueue(); }
     if (G.state.over && !G.busy && !G.queue.length) { onGameOver(); }
@@ -192,39 +232,41 @@
       G.resultShown = true;
       const win = G.state.winner === G.me, draw = G.state.winner === 0;
       Store.addStats({ games: 1, wins: win ? 1 : 0, losses: !win && !draw ? 1 : 0, draws: draw ? 1 : 0, bestMargin: win ? Math.abs(c.black - c.white) : 0 });
-      setTimeout(() => showResult({ outcome: draw ? 'draw' : win ? 'win' : 'lose', why: c.black + ' 比 ' + c.white + (c.empty ? '（雙方都無棋可下）' : ''), black: c.black, white: c.white, winner: G.state.winner }), 900);
+      setTimeout(() => showResult({ outcome: draw ? 'draw' : win ? 'win' : 'lose', why: () => T(c.empty ? 'result.scoreStuck' : 'result.score', { b: c.black, w: c.white }), black: c.black, white: c.white, winner: G.state.winner }), 900);
     } else if (isOnline() && G.room && G.room.status === 'finished') {
       showOnlineResult();
     }
   }
 
-  function showResult(info) {
+  function showResult(info, quiet) {
+    G.resInfo = info;
     const layer = $('result-layer');
     const online = isOnline(), spec = spectating();
     const names = G.names;
-    let title = info.outcome === 'win' ? '你贏了！' : info.outcome === 'lose' ? '你輸了' : info.outcome === 'draw' ? '平手' : (info.title || '對局結束');
-    Sound.play(info.outcome === 'win' ? 'win' : info.outcome === 'lose' ? 'lose' : 'draw'); Sound.buzz(info.outcome === 'win' ? [40, 40, 90] : 40);
-    const again = h('button', { class: 'btn primary', type: 'button', id: 'res-again', disabled: spec, onclick: onAgain }, online ? '再來一局' : '再來一局');
+    let title = info.outcome === 'win' ? T('result.win') : info.outcome === 'lose' ? T('result.lose') : info.outcome === 'draw' ? T('result.draw') : ((info.title && info.title()) || T('result.over'));
+    const waitingAgain = online && G.resAgain && !spec;
+    if (!quiet) { Sound.play(info.outcome === 'win' ? 'win' : info.outcome === 'lose' ? 'lose' : 'draw'); Sound.buzz(info.outcome === 'win' ? [40, 40, 90] : 40); }
+    const again = h('button', { class: 'btn primary', type: 'button', id: 'res-again', disabled: spec || waitingAgain, onclick: onAgain }, waitingAgain ? T('result.waiting') : T('result.again'));
     const card = h('div', { class: 'result-card ' + (info.outcome || ''), role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'res-title' },
       h('h2', { id: 'res-title' }, title),
-      h('p', { class: 'why' }, info.why || ''),
+      h('p', { class: 'why' }, typeof info.why === 'function' ? info.why() : (info.why || '')),
       h('div', { class: 'final' },
-        h('div', { class: 'side' + (info.winner === BLACK ? ' win' : '') }, discIco(BLACK), h('b', null, info.black), h('small', null, names[BLACK] || '黑棋')),
-        h('span', { class: 'vs' }, 'VS'),
-        h('div', { class: 'side' + (info.winner === WHITE ? ' win' : '') }, discIco(WHITE), h('b', null, info.white), h('small', null, names[WHITE] || '白棋'))),
+        h('div', { class: 'side' + (info.winner === BLACK ? ' win' : '') }, discIco(BLACK), h('b', null, info.black), h('small', null, names[BLACK] || cname(BLACK))),
+        h('span', { class: 'vs' }, T('result.vs')),
+        h('div', { class: 'side' + (info.winner === WHITE ? ' win' : '') }, discIco(WHITE), h('b', null, info.white), h('small', null, names[WHITE] || cname(WHITE)))),
       h('div', { class: 'result-actions' }, again,
         h('div', { class: 'row2' },
-          h('button', { class: 'btn', type: 'button', onclick: onBackRoom }, '回到房間'),
-          h('button', { class: 'btn', type: 'button', onclick: onBackHome }, '回到首頁'))),
-      h('p', { class: 'result-note', id: 'res-note' }, spec ? '觀戰者不能開新局' : ''));
+          h('button', { class: 'btn', type: 'button', onclick: onBackRoom }, T('result.toRoom')),
+          h('button', { class: 'btn', type: 'button', onclick: onBackHome }, T('result.toHome')))),
+      h('p', { class: 'result-note', id: 'res-note' }, spec ? T('result.specNote') : (waitingAgain ? T('result.waitNote') : '')));
     layer.replaceChildren(card); layer.hidden = false;
     $('room-panel').hidden = true;
     setTimeout(() => { const b = $('res-again'); if (b && !b.disabled) b.focus(); }, 60);
   }
-  function hideResult() { $('result-layer').hidden = true; }
+  function hideResult() { $('result-layer').hidden = true; G.resAgain = false; }
   function onAgain() {
     if (isLocal()) { hideResult(); startLocal(G.localCfg); return; }
-    if (isOnline() && G.room) { Net.send({ type: 'ready', value: true }); const b = $('res-again'); if (b) { b.disabled = true; b.textContent = '等待對手…'; } const n = $('res-note'); if (n) n.textContent = '對手也按「再來一局」就會開始（顏色會對調）'; }
+    if (isOnline() && G.room) { Net.send({ type: 'ready', value: true }); G.resAgain = true; const b = $('res-again'); if (b) { b.disabled = true; b.textContent = T('result.waiting'); } const n = $('res-note'); if (n) n.textContent = T('result.waitNote'); }
   }
   function onBackRoom() {
     hideResult();
@@ -263,9 +305,9 @@
     attempt(e.idx, e.pointerType);
   }
   function attempt(idx, pointerType) {
-    if (!canIPlay()) { if (G.state && !G.state.over && G.me && G.state.turn !== G.me && !G.busy) { toast('還沒輪到你', 'bad'); Sound.play('error'); } return; }
+    if (!canIPlay()) { if (G.state && !G.state.over && G.me && G.state.turn !== G.me && !G.busy) { toast(T('toast.notYourTurn'), 'bad'); Sound.play('error'); } return; }
     const legal = legalNow();
-    if (legal.indexOf(idx) < 0) { Sound.play('error'); toast('這裡不能下（要夾住對手的棋子才行）', 'bad'); clearSelection(); return; }
+    if (legal.indexOf(idx) < 0) { Sound.play('error'); toast(T('toast.illegal'), 'bad'); clearSelection(); return; }
     if (needConfirm(pointerType)) {
       if (G.selected === idx) { commit(idx); return; }
       G.selected = idx; scene.setSelected(idx); scene.setGhost(idx, G.me); $('confirm-bar').hidden = false; Sound.play('select');
@@ -306,13 +348,13 @@
   glEl.addEventListener('focus', () => { if (G.cursor >= 0 && inGame()) scene.setCursor(G.cursor); });
   function announceCell(i) {
     const v = G.state ? G.state.board[i] : 0, legal = legalNow().indexOf(i) >= 0;
-    $('status-line').setAttribute('aria-label', R.label(i) + (v ? '，' + COLOR_NAME[v] : legal ? '，可以下' : '，空格'));
+    $('status-line').setAttribute('aria-label', R.label(i) + (v ? T('cell.occupied', { c: COLOR_NAME[v] }) : T(legal ? 'cell.legal' : 'cell.empty')));
   }
 
   /* ---------- 提示 ---------- */
   function toggleHint() {
     G.hintOn = !G.hintOn; $('btn-hint').setAttribute('aria-pressed', String(G.hintOn));
-    refreshMarks(); toast(G.hintOn ? '提示已開啟' : '提示已關閉');
+    refreshMarks(); toast(T(G.hintOn ? 'toast.hintOn' : 'toast.hintOff'));
   }
   $('btn-hint').addEventListener('click', toggleHint);
   $('confirm-cancel').addEventListener('click', clearSelection);
@@ -342,11 +384,11 @@
     };
     const rows = [BLACK, WHITE].map(col => {
       const seat = seatInfo(col), turn = G.state.turn === col && !G.state.over;
-      const youTag = (G.me === col) ? h('span', { class: 'tag' }, '你') : null;
-      const sub = isOnline() ? (seat ? [h('span', { class: 'dot' + (seat.connected ? '' : ' off') }), seat.connected ? (seat.id === G.room.hostId ? '房主' : '玩家') : '離線'] : '等待加入') : (col === G.me ? '玩家' : '電腦');
+      const youTag = (G.me === col) ? h('span', { class: 'tag' }, T('role.you')) : null;
+      const sub = isOnline() ? (seat ? [h('span', { class: 'dot' + (seat.connected ? '' : ' off') }), seat.connected ? T(seat.id === G.room.hostId ? 'role.host' : 'role.player') : T('role.offline')] : T('role.waiting')) : T(col === G.me ? 'role.player' : 'role.computer');
       return h('div', { class: 'pl-row' + (turn ? ' turn' : '') }, discIco(col),
         h('div', { class: 'nm' }, h('b', null, G.names[col] || COLOR_NAME[col], youTag), h('small', null, COLOR_NAME[col] + ' · ', sub)),
-        h('div', { class: 'cnt', 'aria-label': COLOR_NAME[col] + ' ' + (col === BLACK ? cc.black : cc.white) + ' 子' }, col === BLACK ? cc.black : cc.white));
+        h('div', { class: 'cnt', 'aria-label': T('score.aria', { c: COLOR_NAME[col], n: col === BLACK ? cc.black : cc.white }) }, col === BLACK ? cc.black : cc.white));
     });
     sb.replaceChildren(rows[0], rows[1]);
   }
@@ -361,15 +403,15 @@
     if (!G.state) return '';
     if (isOnline() && G.room) {
       const st = G.room.status;
-      if (st === 'waiting') return G.room.seats.filter(Boolean).length < 2 ? '等待對手加入…（可複製邀請連結給朋友）' : '雙方按「準備好了」就開始';
-      if (st === 'finished' || G.state.over) return G.room.game.result ? G.room.game.result.text || '對局結束' : '對局結束';
+      if (st === 'waiting') return T(G.room.seats.filter(Boolean).length < 2 ? 'status.waitOpp' : 'status.waitReady');
+      if (st === 'finished' || G.state.over) return G.room.game.result ? resultText(G.room.game.result) || T('status.over') : T('status.over');
     }
-    if (G.state.over) { const c = R.count(G.state.board); return '對局結束　' + c.black + ' 比 ' + c.white; }
+    if (G.state.over) { const c = R.count(G.state.board); return T('status.overScore', { b: c.black, w: c.white }); }
     const t = G.state.turn;
     if (G.busy) return '';
-    if (G.me && t === G.me) return '輪到你下棋（' + COLOR_NAME[t] + '）';
-    if (isLocal()) return '電腦思考中…';
-    return '輪到 ' + (G.names[t] || COLOR_NAME[t]) + '（' + COLOR_NAME[t] + '）';
+    if (G.me && t === G.me) return T('status.yourTurn', { c: COLOR_NAME[t] });
+    if (isLocal()) return T('status.cpu');
+    return T('status.turnOf', { n: G.names[t] || COLOR_NAME[t], c: COLOR_NAME[t] });
   }
   function setStatus() { const t = statusText(); $('status-line').textContent = t; $('status-line').removeAttribute('aria-label'); renderChip(); }
 
@@ -378,38 +420,38 @@
     if (!inGame() || !G.state || G.state.over || (isOnline() && G.room && G.room.status !== 'playing')) { chip.hidden = true; return; }
     const t = G.state.turn, mine = G.me === t;
     chip.hidden = false; chip.className = 'turn-chip' + (mine ? ' mine' : '');
-    chip.replaceChildren(discIco(t, 'sm'), mine ? '輪到你' : (isLocal() ? '電腦思考中' : '輪到 ' + (G.names[t] || COLOR_NAME[t])));
+    chip.replaceChildren(discIco(t, 'sm'), mine ? T('chip.yourTurn') : (isLocal() ? T('chip.cpu') : T('chip.turnOf', { n: G.names[t] || COLOR_NAME[t] })));
   }
 
   function renderSideActions() {
     const box = $('side-actions'), btns = [];
     if (isLocal()) {
-      btns.push(h('button', { class: 'btn small danger', type: 'button', onclick: resignLocal }, h('span', { html: icon('flag') }), '投降'));
-      btns.push(h('button', { class: 'btn small', type: 'button', onclick: restartLocal }, '重新開始'));
-      btns.push(h('button', { class: 'btn small ghost', type: 'button', onclick: askLeaveLocal }, h('span', { html: icon('exit') }), '離開'));
+      btns.push(h('button', { class: 'btn small danger', type: 'button', onclick: resignLocal }, h('span', { html: icon('flag') }), T('act.resign')));
+      btns.push(h('button', { class: 'btn small', type: 'button', onclick: restartLocal }, T('act.restart')));
+      btns.push(h('button', { class: 'btn small ghost', type: 'button', onclick: askLeaveLocal }, h('span', { html: icon('exit') }), T('act.leave')));
     } else if (isOnline() && G.room) {
       const playing = G.room.status === 'playing';
-      if (playing && G.room.you.role === 'player') btns.push(h('button', { class: 'btn small danger', type: 'button', onclick: askResign }, h('span', { html: icon('flag') }), '認輸'));
-      btns.push(h('button', { class: 'btn small ghost', type: 'button', onclick: askLeaveRoom }, h('span', { html: icon('exit') }), '離開房間'));
+      if (playing && G.room.you.role === 'player') btns.push(h('button', { class: 'btn small danger', type: 'button', onclick: askResign }, h('span', { html: icon('flag') }), T('act.resignOnline')));
+      btns.push(h('button', { class: 'btn small ghost', type: 'button', onclick: askLeaveRoom }, h('span', { html: icon('exit') }), T('act.leaveRoom')));
     }
     box.replaceChildren(...btns);
   }
   /* 單機投降：算一場敗績，直接判電腦獲勝 */
   async function resignLocal() {
     if (!isLocal() || !G.state || G.state.over || G.resultShown) return;
-    if (!(await confirmDialog('確定投降？', '投降會算一場敗績，直接判電腦獲勝。', '投降', true))) return;
+    if (!(await confirmDialog(T('dlg.resignTitle'), T('dlg.resignText'), T('dlg.resignOk'), true))) return;
     if (!isLocal() || !G.state || G.state.over || G.resultShown) return;
     G.resultShown = true; G.aiToken++;
     const c = R.count(G.state.board), winner = R.other(G.me);
     Store.addStats({ games: 1, wins: 0, losses: 1, draws: 0, bestMargin: 0 });
-    showResult({ outcome: 'lose', why: '你選擇投降（目前 ' + c.black + ' 比 ' + c.white + '）', black: c.black, white: c.white, winner });
+    showResult({ outcome: 'lose', why: () => T('result.resigned', { b: c.black, w: c.white }), black: c.black, white: c.white, winner });
   }
-  async function restartLocal() { if (G.state && !G.state.over && G.hist.length && !(await confirmDialog('重新開始？', '目前這局會作廢。', '重新開始', true))) return; hideResult(); startLocal(G.localCfg); }
-  async function askLeaveLocal() { if (G.state && !G.state.over && G.hist.length && !(await confirmDialog('離開這局？', '離開後這局不會計入戰績。', '離開', true))) return; goHome(); }
-  async function askResign() { if (await confirmDialog('確定認輸？', '認輸會直接判對手獲勝。', '認輸', true)) Net.send({ type: 'resign' }); }
+  async function restartLocal() { if (G.state && !G.state.over && G.hist.length && !(await confirmDialog(T('dlg.restartTitle'), T('dlg.restartText'), T('dlg.restartOk'), true))) return; hideResult(); startLocal(G.localCfg); }
+  async function askLeaveLocal() { if (G.state && !G.state.over && G.hist.length && !(await confirmDialog(T('dlg.leaveTitle'), T('dlg.leaveText'), T('dlg.leaveOk'), true))) return; goHome(); }
+  async function askResign() { if (await confirmDialog(T('dlg.resignOnTitle'), T('dlg.resignOnText'), T('dlg.resignOnOk'), true)) Net.send({ type: 'resign' }); }
   async function askLeaveRoom() {
     const playing = G.room && G.room.status === 'playing' && G.room.you.role === 'player';
-    if (playing && !(await confirmDialog('離開房間？', '對局進行中離開，會判對手獲勝。', '離開', true))) return;
+    if (playing && !(await confirmDialog(T('dlg.leaveRoomTitle'), T('dlg.leaveRoomText'), T('dlg.leaveOk'), true))) return;
     Net.send({ type: 'leave' }); hideResult();
   }
 
@@ -421,7 +463,7 @@
     const f = Math.max(0, Math.min(1, left / total));
     t.hidden = false; t.classList.toggle('low', left < 8000);
     t.firstElementChild.style.transform = 'scaleX(' + f + ')';
-    t.setAttribute('aria-label', '本步剩餘 ' + Math.max(0, Math.ceil(left / 1000)) + ' 秒');
+    t.setAttribute('aria-label', T('timer.aria', { s: Math.max(0, Math.ceil(left / 1000)) }));
   }, 250);
   $('timer-line').appendChild(h('i'));
 
@@ -434,58 +476,58 @@
   function renderLobby() {
     const box = $('scr-lobby');
     Net.connect(nick());
-    const nameIn = h('input', { type: 'text', maxlength: '16', value: nick(), 'aria-label': '暱稱', id: 'nick-input' });
+    const nameIn = h('input', { type: 'text', maxlength: '16', value: nick(), 'aria-label': T('lobby.nickAria'), id: 'nick-input' });
     nameIn.addEventListener('input', () => { const v = nameIn.value.trim(); Store.set('nickname', v); });
     nameIn.addEventListener('change', () => { if (!nameIn.value.trim()) { nameIn.value = randomName(); Store.set('nickname', nameIn.value); } Net.send({ type: 'name', name: nameIn.value.trim() }); });
-    const roomList = h('ul', { class: 'room-list', id: 'room-list', 'aria-label': '房間列表' });
-    const limitSeg = Segmented('每步限時', [{ value: 0, label: '不限時' }, { value: 30, label: '30 秒' }, { value: 60, label: '60 秒' }], () => G.draftLimit, v => { G.draftLimit = v; });
-    const privRow = Switch('私人房', () => G.draftPrivate, v => { G.draftPrivate = v; }, '不會出現在列表，只能用邀請連結加入');
-    const codeIn = h('input', { type: 'text', maxlength: '4', placeholder: '房號 4 碼', 'aria-label': '房號', id: 'code-input', style: 'text-transform:uppercase' });
-    const joinCode = () => { const c = codeIn.value.trim().toUpperCase(); if (c.length < 4) { toast('請輸入 4 碼房號', 'bad'); return; } Net.send({ type: 'join', roomId: c, want: 'player', name: nick() }); };
+    const roomList = h('ul', { class: 'room-list', id: 'room-list', 'aria-label': T('lobby.listAria') });
+    const limitSeg = Segmented(T('lobby.limit'), limitOpts(), () => G.draftLimit, v => { G.draftLimit = v; });
+    const privRow = Switch(T('lobby.private'), () => G.draftPrivate, v => { G.draftPrivate = v; }, T('lobby.privateHint'));
+    const codeIn = h('input', { type: 'text', maxlength: '4', placeholder: T('lobby.codePh'), 'aria-label': T('lobby.codeAria'), id: 'code-input', style: 'text-transform:uppercase' });
+    const joinCode = () => { const c = codeIn.value.trim().toUpperCase(); if (c.length < 4) { toast(T('toast.codeNeeded'), 'bad'); return; } Net.send({ type: 'join', roomId: c, want: 'player', name: nick() }); };
     codeIn.addEventListener('keydown', e => { if (e.key === 'Enter') joinCode(); });
     box.replaceChildren(...[
-      h('div', { class: 'card-head' }, h('h2', { class: 'title', id: 'lobby-title' }, '線上對戰'), h('button', { class: 'btn small ghost', type: 'button', onclick: () => { Net.close(); G.invite = null; show('home'); } }, '返回')),
+      h('div', { class: 'card-head' }, h('h2', { class: 'title', id: 'lobby-title' }, T('lobby.title')), h('button', { class: 'btn small ghost', type: 'button', onclick: () => { Net.close(); G.invite = null; show('home'); } }, T('common.back'))),
       h('div', { class: 'net-note', id: 'net-note' }),
       G.invite ? inviteCard() : null,
       h('div', { class: 'lobby-grid' },
         h('section', null,
-          h('div', { class: 'field' }, h('label', { for: 'nick-input' }, '你的暱稱'), h('div', { class: 'inline' }, nameIn, h('button', { class: 'btn small ghost', type: 'button', onclick: () => { nameIn.value = randomName(); Store.set('nickname', nameIn.value); Net.send({ type: 'name', name: nameIn.value }); } }, '換一個'))),
-          h('div', { class: 'sec-title' }, '建立房間'), limitSeg, privRow,
-          h('button', { class: 'btn primary', type: 'button', style: 'width:100%;margin-top:10px', onclick: () => Net.send({ type: 'create', name: nick(), limit: G.draftLimit, isPrivate: G.draftPrivate }) }, '建立房間'),
-          h('div', { class: 'sec-title' }, '用房號加入'), h('div', { class: 'field' }, h('div', { class: 'inline' }, codeIn, h('button', { class: 'btn small', type: 'button', onclick: joinCode }, '加入')))),
-        h('section', null, h('div', { class: 'sec-title', style: 'margin-top:0' }, '公開房間'), roomList))].filter(Boolean));
+          h('div', { class: 'field' }, h('label', { for: 'nick-input' }, T('lobby.nick')), h('div', { class: 'inline' }, nameIn, h('button', { class: 'btn small ghost', type: 'button', onclick: () => { nameIn.value = randomName(); Store.set('nickname', nameIn.value); Net.send({ type: 'name', name: nameIn.value }); } }, T('lobby.shuffle')))),
+          h('div', { class: 'sec-title' }, T('lobby.create')), limitSeg, privRow,
+          h('button', { class: 'btn primary', type: 'button', style: 'width:100%;margin-top:10px', onclick: () => Net.send({ type: 'create', name: nick(), limit: G.draftLimit, isPrivate: G.draftPrivate }) }, T('lobby.create')),
+          h('div', { class: 'sec-title' }, T('lobby.joinCode')), h('div', { class: 'field' }, h('div', { class: 'inline' }, codeIn, h('button', { class: 'btn small', type: 'button', onclick: joinCode }, T('common.join'))))),
+        h('section', null, h('div', { class: 'sec-title', style: 'margin-top:0' }, T('lobby.public')), roomList))].filter(Boolean));
     renderNetNote(); renderRoomList();
     Net.send({ type: 'lobby' });
   }
   function inviteCard() {
     const inv = G.invite;
-    return h('div', { class: 'invite-card', role: 'group', 'aria-label': '邀請' },
-      h('h3', null, '你被邀請加入房間 ' + inv.room),
-      h('p', { class: 'sub', style: 'text-align:left;margin:0 0 10px' }, '確認上面的暱稱後，選擇要入座對戰還是先觀戰。'),
+    return h('div', { class: 'invite-card', role: 'group', 'aria-label': T('invite.aria') },
+      h('h3', null, T('invite.title', { r: inv.room })),
+      h('p', { class: 'sub', style: 'text-align:left;margin:0 0 10px' }, T('invite.sub')),
       G.inviteError ? h('p', { class: 'toast bad', style: 'margin-bottom:10px' }, G.inviteError) : null,
       h('div', { class: 'room-actions' },
-        h('button', { class: 'btn primary', type: 'button', onclick: () => Net.send({ type: 'join', roomId: inv.room, token: inv.token, want: 'player', name: nick() }) }, '加入對戰'),
-        h('button', { class: 'btn', type: 'button', onclick: () => Net.send({ type: 'join', roomId: inv.room, token: inv.token, want: 'spectator', name: nick() }) }, h('span', { html: icon('eye') }), '先觀戰'),
-        h('button', { class: 'btn ghost', type: 'button', onclick: () => { G.invite = null; G.inviteError = ''; clearInviteParams(); renderLobby(); } }, '不加入')));
+        h('button', { class: 'btn primary', type: 'button', onclick: () => Net.send({ type: 'join', roomId: inv.room, token: inv.token, want: 'player', name: nick() }) }, T('invite.play')),
+        h('button', { class: 'btn', type: 'button', onclick: () => Net.send({ type: 'join', roomId: inv.room, token: inv.token, want: 'spectator', name: nick() }) }, h('span', { html: icon('eye') }), T('invite.watch')),
+        h('button', { class: 'btn ghost', type: 'button', onclick: () => { G.invite = null; G.inviteError = ''; clearInviteParams(); renderLobby(); } }, T('invite.decline'))));
   }
   function clearInviteParams() { try { const u = new URL(location.href); u.searchParams.delete('room'); u.searchParams.delete('invite'); history.replaceState(null, '', u.toString()); } catch (e) { /* ignore */ } }
   function renderNetNote() {
     const n = $('net-note'); if (!n) return;
     const s = Net.status;
     n.className = 'net-note' + (s === 'failed' || s === 'disabled' ? ' bad' : '');
-    n.textContent = s === 'open' ? '已連線到伺服器' : (Net.statusText || '連線中…');
+    n.textContent = s === 'open' ? T('net.open') : (netLabel() || T('net.connectingDots'));
   }
   function renderRoomList() {
     const ul = $('room-list'); if (!ul) return;
-    if (!G.lobby.length) { ul.replaceChildren(h('li', { class: 'empty' }, Net.status === 'open' ? '目前沒有公開房間，建立一間吧！' : '連線後會顯示房間')); return; }
+    if (!G.lobby.length) { ul.replaceChildren(h('li', { class: 'empty' }, T(Net.status === 'open' ? 'lobby.empty' : 'lobby.emptyConn'))); return; }
     ul.replaceChildren(...G.lobby.map(r => {
-      const join = r.status === 'playing' ? '對局中' : r.players >= 2 ? '已滿' : '等待中';
+      const join = T(r.status === 'playing' ? 'lobby.playing' : r.players >= 2 ? 'lobby.full' : 'lobby.open');
       const canSit = r.players < 2 && r.status !== 'playing';
       return h('li', { class: 'room-item' }, h('span', { class: 'code' }, r.id),
-        h('div', { class: 'meta' }, h('b', null, r.hostName + ' 的房間'), r.players + '/' + r.seats + ' 人 · ' + join + (r.limit ? ' · 每步 ' + r.limit + ' 秒' : '') + (r.spectators ? ' · 觀戰 ' + r.spectators : '')),
+        h('div', { class: 'meta' }, h('b', null, T('lobby.roomOf', { n: r.hostName })), T('lobby.people', { p: r.players, s: r.seats, st: join }) + (r.limit ? T('lobby.perMove', { n: r.limit }) : '') + (r.spectators ? T('lobby.watching', { n: r.spectators }) : '')),
         h('div', { class: 'acts' },
-          canSit ? h('button', { class: 'btn small primary', type: 'button', onclick: () => Net.send({ type: 'join', roomId: r.id, want: 'player', name: nick() }) }, '加入') : null,
-          h('button', { class: 'btn small', type: 'button', disabled: r.specFull, onclick: () => Net.send({ type: 'join', roomId: r.id, want: 'spectator', name: nick() }) }, '觀戰')));
+          canSit ? h('button', { class: 'btn small primary', type: 'button', onclick: () => Net.send({ type: 'join', roomId: r.id, want: 'player', name: nick() }) }, T('common.join')) : null,
+          h('button', { class: 'btn small', type: 'button', disabled: r.specFull, onclick: () => Net.send({ type: 'join', roomId: r.id, want: 'spectator', name: nick() }) }, T('common.watch'))));
     }));
   }
 
@@ -504,20 +546,20 @@
     else { fullRefresh(); if (!G.busy && !G.queue.length) reconcile(); }
   }
   function syncNames() {
-    G.names = { 1: '黑棋（空位）', 2: '白棋（空位）' };
+    G.names = { 1: T('seat.emptyBlack'), 2: T('seat.emptyWhite') };
     G.room.seats.forEach(s => { if (s) G.names[s.color] = s.name; });
   }
   function enterOnline(room) {
     G.mode = 'online'; G.gameId++; G.aiToken++; G.busy = false; G.queue = []; G.waitingMove = false; G.resultShown = false;
     G.resultDismissed = room.game.over; G.hist = [];
     G.me = room.you.color || 0; syncNames();
-    $('chatbox').hidden = false; $('chat-list').replaceChildren(); $('chat-quick').replaceChildren(...PHRASES.map(p => h('button', { type: 'button', onclick: () => Net.send({ type: 'chat', text: p }) }, p)));
+    $('chatbox').hidden = false; $('chat-list').replaceChildren(); $('chat-quick').replaceChildren(...phrases().map(p => h('button', { type: 'button', onclick: () => Net.send({ type: 'chat', text: p }) }, p)));
     room.chat.forEach(m => addChat(m, true));
     G.hintOn = false;
     show('game');
     $('hud-bottom').hidden = true;
     beginOnlineGame(room, true);
-    toast(room.you.role === 'player' ? '已進入房間 ' + room.id : '你正在觀戰房間 ' + room.id);
+    toast(T(room.you.role === 'player' ? 'toast.entered' : 'toast.watching', { r: room.id }));
   }
   function beginOnlineGame(room, entering) {
     G.gameNo = room.game.number; G.resultShown = false; G.resultDismissed = entering ? room.game.over : false;
@@ -565,8 +607,8 @@
     G.resultShown = true;
     const mine = G.me;
     const outcome = !mine ? 'spec' : res.winner === 0 ? 'draw' : res.winner === mine ? 'win' : 'lose';
-    let why = res.reason === 'normal' ? c.black + ' 比 ' + c.white : (res.text || '');
-    const title = outcome === 'spec' ? (res.winner === 0 ? '平手' : (G.names[res.winner] || COLOR_NAME[res.winner]) + ' 獲勝') : null;
+    const why = () => resultText({ reason: res.reason, code: res.code, params: res.params, black: c.black, white: c.white });
+    const title = outcome === 'spec' ? () => res.winner === 0 ? T('result.draw') : T('result.specWin', { n: G.names[res.winner] || COLOR_NAME[res.winner] }) : null;
     setTimeout(() => { if (G.room && G.room.status === 'finished' && !G.resultDismissed) showResult({ outcome: outcome, title: title, why: why, black: c.black, white: c.white, winner: res.winner }); }, res.reason === 'normal' ? 900 : 300);
   }
 
@@ -579,9 +621,9 @@
   }
   async function copyInvite() {
     const url = inviteUrl();
-    try { await navigator.clipboard.writeText(url); toast('邀請連結已複製', 'good'); }
+    try { await navigator.clipboard.writeText(url); toast(T('toast.copied'), 'good'); }
     catch (e) {
-      const m = modal({ title: '複製邀請連結', cls: 'small', body: [h('p', { class: 'modal-text' }, '請手動複製下面的連結：'), h('input', { type: 'text', value: url, readonly: true, id: 'inv-url', 'aria-label': '邀請連結' })], actions: h('button', { class: 'btn primary', type: 'button', onclick: () => m.close() }, '好') });
+      const m = modal({ title: T('room.copyInvite'), cls: 'small', body: [h('p', { class: 'modal-text' }, T('copy.manual')), h('input', { type: 'text', value: url, readonly: true, id: 'inv-url', 'aria-label': T('copy.linkAria') })], actions: h('button', { class: 'btn primary', type: 'button', onclick: () => m.close() }, T('copy.ok')) });
       setTimeout(() => { const i = $('inv-url'); if (i) { i.focus(); i.select(); } }, 60);
     }
   }
@@ -591,29 +633,29 @@
     const oldMore = p.querySelector('details.room-more'), moreOpen = !!(oldMore && oldMore.open);
     const room = G.room, you = room.you, host = you.host;
     const seats = room.seats.map((s, i) => s ?
-      h('div', { class: 'seat taken' }, discIco(s.color), h('div', null, h('b', null, s.name, s.id === you.id ? h('span', { class: 'tag' }, '你') : null, s.id === room.hostId ? h('span', { class: 'tag' }, '房主') : null),
-        h('small', null, h('span', { class: 'dot' + (s.connected ? '' : ' off') }), s.connected ? (s.ready ? '已準備' : '還沒準備') : '離線中…'),
-        host && s.id !== you.id ? h('button', { class: 'btn small ghost', type: 'button', style: 'margin-left:8px', onclick: () => Net.send({ type: 'kick', target: s.id }) }, '請出') : null)) :
-      h('div', { class: 'seat' }, h('span', { class: 'disc-ico', style: 'background:rgba(255,255,255,.07);box-shadow:none' }), h('div', null, h('b', null, '空位'), h('small', null, '等待玩家加入'))));
+      h('div', { class: 'seat taken' }, discIco(s.color), h('div', null, h('b', null, s.name, s.id === you.id ? h('span', { class: 'tag' }, T('room.tagYou')) : null, s.id === room.hostId ? h('span', { class: 'tag' }, T('room.tagHost')) : null),
+        h('small', null, h('span', { class: 'dot' + (s.connected ? '' : ' off') }), s.connected ? T(s.ready ? 'room.ready' : 'room.notReady') : T('room.offline')),
+        host && s.id !== you.id ? h('button', { class: 'btn small ghost', type: 'button', style: 'margin-left:8px', onclick: () => Net.send({ type: 'kick', target: s.id }) }, T('room.kick')) : null)) :
+      h('div', { class: 'seat' }, h('span', { class: 'disc-ico', style: 'background:rgba(255,255,255,.07);box-shadow:none' }), h('div', null, h('b', null, T('room.seatEmpty')), h('small', null, T('room.seatWait')))));
     const me = room.seats.find(s => s && s.id === you.id);
     const actions = [];
     const full = room.seats.every(Boolean);
-    if (you.role === 'player') actions.push(h('button', { class: 'btn primary', type: 'button', disabled: !full, onclick: () => Net.send({ type: 'ready', value: !(me && me.ready) }) }, me && me.ready ? '取消準備' : (full ? '準備好了' : '等對手加入')));
-    else if (!full) actions.push(h('button', { class: 'btn primary', type: 'button', onclick: () => Net.send({ type: 'sit' }) }, '入座對戰'));
-    if (host) actions.push(h('button', { class: 'btn', type: 'button', onclick: copyInvite }, h('span', { html: icon('link') }), '複製邀請連結'));
-    actions.push(h('button', { class: 'btn ghost', type: 'button', onclick: askLeaveRoom }, '離開房間'));
+    if (you.role === 'player') actions.push(h('button', { class: 'btn primary', type: 'button', disabled: !full, onclick: () => Net.send({ type: 'ready', value: !(me && me.ready) }) }, T(me && me.ready ? 'room.cancelReady' : (full ? 'room.readyBtn' : 'room.waitOpp'))));
+    else if (!full) actions.push(h('button', { class: 'btn primary', type: 'button', onclick: () => Net.send({ type: 'sit' }) }, T('room.sit')));
+    if (host) actions.push(h('button', { class: 'btn', type: 'button', onclick: copyInvite }, h('span', { html: icon('link') }), T('room.copyInvite')));
+    actions.push(h('button', { class: 'btn ghost', type: 'button', onclick: askLeaveRoom }, T('act.leaveRoom')));
     const inv = room.invite;
-    const invText = !inv ? '' : inv.revoked ? '邀請連結已撤銷' : inv.expired ? '邀請連結已過期，請換新的' : '邀請連結有效至 ' + new Date(inv.expiresAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-    const more = host ? h('details', { class: 'room-more' }, h('summary', null, '邀請與房間設定'),
+    const invText = !inv ? '' : inv.revoked ? T('room.inviteRevoked') : inv.expired ? T('room.inviteExpired') : T('room.inviteUntil', { t: new Date(inv.expiresAt).toLocaleTimeString(I18N.lang === 'en' ? 'en-US' : 'zh-TW', { hour: '2-digit', minute: '2-digit' }) });
+    const more = host ? h('details', { class: 'room-more' }, h('summary', null, T('room.more')),
       h('p', { class: 'spec-line' }, invText),
       h('div', { class: 'room-actions', style: 'margin:8px 0' },
-        h('button', { class: 'btn small', type: 'button', onclick: () => Net.send({ type: 'invite_new' }) }, '換新連結'),
-        h('button', { class: 'btn small ghost', type: 'button', onclick: () => Net.send({ type: 'invite_revoke' }) }, '撤銷連結')),
-      Segmented('每步限時', [{ value: 0, label: '不限時' }, { value: 30, label: '30 秒' }, { value: 60, label: '60 秒' }], () => G.room.settings.limit, v => Net.send({ type: 'settings', limit: v })),
-      Switch('私人房', () => G.room.settings.isPrivate, v => Net.send({ type: 'settings', isPrivate: v }), '不出現在公開列表')) : null;
-    const specs = room.specs.length ? h('p', { class: 'spec-line' }, '觀戰 ' + room.specs.length + ' 人：' + room.specs.map(s => s.name).join('、')) : null;
+        h('button', { class: 'btn small', type: 'button', onclick: () => Net.send({ type: 'invite_new' }) }, T('room.newLink')),
+        h('button', { class: 'btn small ghost', type: 'button', onclick: () => Net.send({ type: 'invite_revoke' }) }, T('room.revoke'))),
+      Segmented(T('lobby.limit'), limitOpts(), () => G.room.settings.limit, v => Net.send({ type: 'settings', limit: v })),
+      Switch(T('lobby.private'), () => G.room.settings.isPrivate, v => Net.send({ type: 'settings', isPrivate: v }), T('room.privateHint2'))) : null;
+    const specs = room.specs.length ? h('p', { class: 'spec-line' }, T('room.specs', { n: room.specs.length, names: room.specs.map(s => s.name).join(T('room.nameSep')) })) : null;
     p.replaceChildren(...[
-      h('div', { class: 'room-head' }, h('span', { class: 'room-code', 'aria-label': '房號 ' + room.id.split('').join(' ') }, room.id), h('span', { class: 'sub', style: 'margin:0;text-align:left' }, room.status === 'finished' ? '這局結束了，可以再來一局' : '等待開局' + (room.settings.limit ? ' · 每步 ' + room.settings.limit + ' 秒' : '') + (room.settings.isPrivate ? ' · 私人房' : ''))),
+      h('div', { class: 'room-head' }, h('span', { class: 'room-code', 'aria-label': T('room.codeAria', { c: room.id.split('').join(' ') }) }, room.id), h('span', { class: 'sub', style: 'margin:0;text-align:left' }, room.status === 'finished' ? T('room.finished') : T('room.waitStart') + (room.settings.limit ? T('lobby.perMove', { n: room.settings.limit }) : '') + (room.settings.isPrivate ? T('room.privateTag') : ''))),
       h('div', { class: 'seat-list' }, seats), h('div', { class: 'room-actions' }, actions), specs, more].filter(Boolean));
     const nm = p.querySelector('details.room-more'); if (nm && moreOpen) nm.open = true;
     p.hidden = false;
@@ -622,7 +664,7 @@
   /* ---------- 聊天 ---------- */
   function addChat(m, silent) {
     const ul = $('chat-list');
-    const li = h('li', { class: m.role === 'spectator' ? 'spec' : '' }, h('b', null, m.name + (m.role === 'spectator' ? '（觀戰）' : '')), m.text);
+    const li = h('li', { class: m.role === 'spectator' ? 'spec' : '' }, h('b', null, m.name + (m.role === 'spectator' ? T('chat.spec') : '')), m.text);
     ul.appendChild(li); while (ul.children.length > 80) ul.firstChild.remove();
     ul.scrollTop = ul.scrollHeight;
     if (!silent) { if (app.dataset.side !== 'open') { G.unread++; renderBadge(); } if (m.id !== (G.room && G.room.you.id)) Sound.play('chat'); }
@@ -631,24 +673,24 @@
   $('chat-form').addEventListener('submit', e => { e.preventDefault(); const i = $('chat-input'), t = i.value.trim(); if (!t) return; Net.send({ type: 'chat', text: t }); i.value = ''; });
 
   /* ---------- 網路事件 ---------- */
-  Net.on('status', s => { Net.statusText = s.text; if (G.screen === 'lobby') renderNetNote(); if (G.mode === 'online' && s.status === 'retrying') toast('連線中斷，重新連線中…', 'bad'); if (s.status === 'open' && G.screen === 'lobby') Net.send({ type: 'lobby' }); });
+  Net.on('status', s => { if (G.screen === 'lobby') renderNetNote(); if (G.mode === 'online' && s.status === 'retrying') toast(T('toast.reconnecting'), 'bad'); if (s.status === 'open' && G.screen === 'lobby') Net.send({ type: 'lobby' }); });
   Net.on('lobby', m => { G.lobby = m.rooms || []; if (G.screen === 'lobby') renderRoomList(); });
   Net.on('room', m => onRoom(m.room));
   Net.on('moved', onMoved);
   Net.on('chat', m => addChat(m.msg));
-  Net.on('toast', m => { toast(m.text); if (isOnline()) addSys(m.text); });
+  Net.on('toast', m => { const x = srvToast(m); if (!x) return; toast(x); if (isOnline()) addSys(x); });
   Net.on('left', () => { leaveOnlineQuiet(); G.mode = null; G.state = null; show('lobby'); });
   Net.on('closed', m => {
-    const text = m.reason === 'kicked' ? '你被房主請出了房間。' : '房間已經結束（房內已沒有玩家）。';
+    const text = T(m.reason === 'kicked' ? 'closed.kicked' : 'closed.ended');
     leaveOnlineQuiet(); G.mode = null; G.state = null; hideResult(); show('lobby');
-    const dlg = modal({ title: '房間已結束', cls: 'small', alert: true, body: h('p', { class: 'modal-text' }, text), actions: h('button', { class: 'btn primary', type: 'button', onclick: () => dlg.close() }, '回到大廳') });
+    const dlg = modal({ title: T('closed.title'), cls: 'small', alert: true, body: h('p', { class: 'modal-text' }, text), actions: h('button', { class: 'btn primary', type: 'button', onclick: () => dlg.close() }, T('closed.ok')) });
   });
   Net.on('error', m => {
     Sound.play('error'); G.waitingMove = false; scene.setGhost(-1);
-    if (G.screen === 'lobby' && G.invite) { G.inviteError = m.text || '加入失敗'; renderLobby(); return; }
-    toast(m.text || '發生錯誤', 'bad'); if (inGame()) refreshMarks();
+    if (G.screen === 'lobby' && G.invite) { G.inviteError = srvError(m) || T('invite.failed'); renderLobby(); return; }
+    toast(srvError(m) || T('toast.error'), 'bad'); if (inGame()) refreshMarks();
   });
-  Net.on('dropped', () => { if (G.mode === 'online') toast('連線中斷，正在重新連線…', 'bad'); });
+  Net.on('dropped', () => { if (G.mode === 'online') toast(T('toast.dropped'), 'bad'); });
 
   /* ================= 設定 ================= */
   let settingsModal = null;
@@ -659,18 +701,18 @@
     const sl = (label, key) => { const r = Slider(label, () => Store.get(key), v => Store.set(key, v)); rows.push(r); return r; };
     const sg = (label, key, opts) => { const r = Segmented(label, opts, () => Store.get(key), v => Store.set(key, v)); rows.push(r); return r; };
     const body = h('div', null,
-      h('div', { class: 'sec-title' }, '聲音'),
-      sw('背景音樂', 'musicOn'), sl('音樂音量', 'musicVol'), sw('音效', 'sfxOn'), sl('音效音量', 'sfxVol'), sw('震動回饋', 'vibrate', '手機落子時輕震'),
-      h('div', { class: 'sec-title' }, '畫面'),
-      h('div', { class: 'row' }, h('span', { class: 'row-label' }, '畫質', h('small', null, '機器較舊或發燙時調低（影響畫面細緻度）')), sg('畫質', 'quality', [{ value: 'auto', label: '自動' }, { value: 'high', label: '高' }, { value: 'mid', label: '中' }, { value: 'low', label: '低' }])),
-      sw('減少動態', 'reduceMotion', '棋子翻轉改成短而平的動畫、關閉飛起效果'), sw('色彩輔助', 'colorAssist', '黑棋中央有亮點、白棋有細環'),
-      sw('顯示可下位置', 'showLegal'), sw('標記上一步', 'showLast'), sw('顯示座標', 'showCoords'),
-      h('div', { class: 'sec-title' }, '操作'),
-      h('div', { class: 'row' }, h('span', { class: 'row-label' }, '落子確認', h('small', null, '自動：觸控點兩下、滑鼠點一下')), sg('落子確認', 'confirmMove', [{ value: 'auto', label: '自動' }, { value: 'on', label: '點兩下' }, { value: 'off', label: '點一下' }])),
-      h('div', { class: 'row' }, h('span', { class: 'row-label' }, '棋盤方向', h('small', null, '面向自己：執白時棋盤轉 180°，自己的棋永遠在下方')), sg('棋盤方向', 'cameraSide', [{ value: 'auto', label: '面向自己' }, { value: 'fixed', label: '黑棋在下' }])));
+      h('div', { class: 'sec-title' }, T('set.sound')),
+      sw(T('set.music'), 'musicOn'), sl(T('set.musicVol'), 'musicVol'), sw(T('set.sfx'), 'sfxOn'), sl(T('set.sfxVol'), 'sfxVol'), sw(T('set.vibrate'), 'vibrate', T('set.vibrateHint')),
+      h('div', { class: 'sec-title' }, T('set.display')),
+      h('div', { class: 'row' }, h('span', { class: 'row-label' }, T('set.quality'), h('small', null, T('set.qualityHint'))), sg(T('set.quality'), 'quality', [{ value: 'auto', label: T('common.auto') }, { value: 'high', label: T('set.qHigh') }, { value: 'mid', label: T('set.qMid') }, { value: 'low', label: T('set.qLow') }])),
+      sw(T('set.reduce'), 'reduceMotion', T('set.reduceHint')), sw(T('set.assist'), 'colorAssist', T('set.assistHint')),
+      sw(T('set.legal'), 'showLegal'), sw(T('set.last'), 'showLast'), sw(T('set.coords'), 'showCoords'),
+      h('div', { class: 'sec-title' }, T('set.controls')),
+      h('div', { class: 'row' }, h('span', { class: 'row-label' }, T('set.confirm'), h('small', null, T('set.confirmHint'))), sg(T('set.confirm'), 'confirmMove', [{ value: 'auto', label: T('common.auto') }, { value: 'on', label: T('set.confirmOn') }, { value: 'off', label: T('set.confirmOff') }])),
+      h('div', { class: 'row' }, h('span', { class: 'row-label' }, T('set.side'), h('small', null, T('set.sideHint'))), sg(T('set.side'), 'cameraSide', [{ value: 'auto', label: T('set.sideAuto') }, { value: 'fixed', label: T('set.sideFixed') }])));
     settingsModal = modal({
-      title: '設定', body: body, focus: '.sw',
-      actions: [h('button', { class: 'btn ghost', type: 'button', onclick: () => { Store.reset(); rows.forEach(r => r.refresh && r.refresh()); toast('已恢復預設'); } }, '恢復預設'), h('button', { class: 'btn primary', type: 'button', onclick: () => settingsModal.close() }, '完成')]
+      title: T('set.title'), body: body, focus: '.sw',
+      actions: [h('button', { class: 'btn ghost', type: 'button', onclick: () => { Store.reset(); rows.forEach(r => r.refresh && r.refresh()); toast(T('toast.reset')); } }, T('set.reset')), h('button', { class: 'btn primary', type: 'button', onclick: () => settingsModal.close() }, T('set.done'))]
     });
   }
   $('btn-settings').addEventListener('click', openSettings);
@@ -690,19 +732,21 @@
   Store.onChange(applySetting);
 
   /* ================= 怎麼玩 ================= */
+  let howModal = null;
   function openHow() {
     const m = modal({
-      title: '怎麼玩', cls: 'how',
+      title: T('how.title'), cls: 'how',
       body: h('div', { class: 'how' },
-        h('h3', null, '目標'), h('p', null, '遊戲結束時，盤面上自己顏色的棋子比對手多就贏。'),
-        h('h3', null, '輪流下棋'), h('p', null, '黑棋先下。每一步都要把棋子放在空格，並且在某個方向上「夾住」對手連續的棋子（兩端都是你的顏色），被夾住的棋子會全部翻成你的顏色。'),
-        h('p', null, '畫面上的小圓點就是這回合可以下的位置。沒有可下的位置時，這回合自動跳過；雙方都沒有位置或棋盤滿了，遊戲結束。'),
-        h('h3', null, '小技巧'), h('p', null, '四個角落一旦佔到就不會被翻掉，很值錢；角落旁邊的格子反而容易把角落送給對手。'),
-        h('p', { class: 'muted' }, '幼幼班難度有提示可以開，適合剛學的小朋友。'),
-        h('h3', null, '操作'), h('p', null, '滑鼠：移到可下位置會預覽，點一下落子。觸控：點一下選位置，再點同一格確認（設定裡可改成點一下）。鍵盤：點棋盤後用方向鍵移動、Enter 落子。'),
-        h('h3', null, '線上對戰'), h('p', null, '建立房間後把邀請連結傳給朋友；朋友可以入座對戰或先觀戰，也能在聊天室說話。每局結束後雙方按「再來一局」會對調顏色。')),
-      actions: h('button', { class: 'btn primary', type: 'button', onclick: () => m.close() }, '知道了')
+        h('h3', null, T('how.h1')), h('p', null, T('how.p1')),
+        h('h3', null, T('how.h2')), h('p', null, T('how.p2')),
+        h('p', null, T('how.p3')),
+        h('h3', null, T('how.h3')), h('p', null, T('how.p4')),
+        h('p', { class: 'muted' }, T('how.p5')),
+        h('h3', null, T('how.h4')), h('p', null, T('how.p6')),
+        h('h3', null, T('how.h5')), h('p', null, T('how.p7'))),
+      actions: h('button', { class: 'btn primary', type: 'button', onclick: () => m.close() }, T('how.ok'))
     });
+    howModal = m;
   }
 
   /* ================= 側欄／首頁按鈕 ================= */
@@ -717,15 +761,17 @@
   });
 
   /* 左上角「返回遊戲大廳」：只在首頁出現；網址 ?lobby= 優先，否則用與其他遊戲相同的大廳位置 */
-  $('btn-lobby').href = (window.LobbyLink && LobbyLink.url) || 'https://pjh-eric.github.io/game-lobby/';
+  const lobbyHref = (window.LobbyLink && LobbyLink.url) || 'https://pjh-eric.github.io/game-lobby/';
+  const setLobbyHref = () => { $('btn-lobby').href = I18N.withLang(lobbyHref); };
+  setLobbyHref();
 
   /* ================= 啟動 ================= */
   function boot() {
     hydrateIcons(document);
-    $('boot-text').textContent = '棋盤準備中…';
+    $('boot-text').textContent = T('boot.text');
     if (!initScene()) {
       $('boot').innerHTML = '';
-      $('boot').append(h('div', { style: 'text-align:center;max-width:380px;padding:20px' }, h('h2', { style: 'font-family:var(--serif);color:var(--brass-hi);margin-bottom:10px' }, '這個瀏覽器無法顯示棋盤'), h('p', { style: 'color:var(--muted);margin-bottom:16px' }, '棋盤需要瀏覽器支援 Canvas。請換一個較新的瀏覽器後重新整理。'), h('button', { class: 'btn primary', type: 'button', onclick: () => location.reload() }, '重新整理')));
+      $('boot').append(h('div', { style: 'text-align:center;max-width:380px;padding:20px' }, h('h2', { style: 'font-family:var(--serif);color:var(--brass-hi);margin-bottom:10px' }, T('boot.failTitle')), h('p', { style: 'color:var(--muted);margin-bottom:16px' }, T('boot.failBody')), h('button', { class: 'btn primary', type: 'button', onclick: () => location.reload() }, T('boot.reload'))));
       return;
     }
     applySetting('*');
@@ -739,4 +785,32 @@
     Latency.refresh();
   }
   boot();
+  I18N.mountToggle({ after: $('btn-settings'), id: 'btn-lang' });
+
+  /* ================= 多語系 ================= */
+  I18N.onChange(() => {
+    setLobbyHref(); refreshNames();
+    if (settingsModal && !settingsModal.closed) {
+      const scroll = settingsModal.el.querySelector('.modal-body').scrollTop;
+      settingsModal.close('language');
+      openSettings();
+      settingsModal.el.querySelector('.modal-body').scrollTop = scroll;
+    }
+    if (howModal && !howModal.closed) {
+      const scroll = howModal.el.querySelector('.modal-body').scrollTop;
+      howModal.close('language');
+      openHow();
+      howModal.el.querySelector('.modal-body').scrollTop = scroll;
+    }
+    if (G.screen === 'home') renderHome();
+    else if (G.screen === 'setup') renderSetup();
+    else if (G.screen === 'lobby') renderLobby();
+    else if (inGame()) {
+      renderScores(); renderHistory(); setStatus(); renderSideActions();
+      $('chat-quick').replaceChildren(...phrases().map(p => h('button', { type: 'button', onclick: () => Net.send({ type: 'chat', text: p }) }, p)));
+      if (isOnline()) renderRoomPanel();
+      if (!$('result-layer').hidden && G.resInfo) showResult(G.resInfo, true);
+    }
+    Latency.refresh();
+  });
 })();

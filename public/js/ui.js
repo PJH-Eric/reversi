@@ -113,7 +113,7 @@
     const prev = document.activeElement;
     const titleId = 'm' + Math.random().toString(36).slice(2, 7);
     const box = h('div', { class: 'modal ' + (opts.cls || ''), role: opts.alert ? 'alertdialog' : 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId },
-      h('header', { class: 'modal-head' }, h('h2', { id: titleId }, opts.title), opts.noClose ? null : h('button', { class: 'icon-btn small', type: 'button', 'aria-label': '關閉', onclick: () => api.close('x') }, h('span', { html: icon('close') }))),
+      h('header', { class: 'modal-head' }, h('h2', { id: titleId }, opts.title), opts.noClose ? null : h('button', { class: 'icon-btn small', type: 'button', 'aria-label': I18N.t('common.close'), onclick: () => api.close('x') }, h('span', { html: icon('close') }))),
       h('div', { class: 'modal-body' }, opts.body),
       opts.actions ? h('footer', { class: 'modal-foot' }, opts.actions) : null);
     const veil = h('div', { class: 'veil', onpointerdown: e => { if (e.target === veil && !opts.noClose) api.close('veil'); } }, box);
@@ -151,8 +151,8 @@
       const m = modal({
         title: title, alert: true, cls: 'small', noClose: false,
         body: h('p', { class: 'modal-text' }, text),
-        actions: [h('button', { class: 'btn ghost', type: 'button', onclick: () => { res(false); m.close('no'); } }, '先不要'),
-          h('button', { class: 'btn ' + (danger ? 'danger' : 'primary'), type: 'button', onclick: () => { res(true); m.close('yes'); } }, okLabel || '確定')],
+        actions: [h('button', { class: 'btn ghost', type: 'button', onclick: () => { res(false); m.close('no'); } }, I18N.t('common.notNow')),
+          h('button', { class: 'btn ' + (danger ? 'danger' : 'primary'), type: 'button', onclick: () => { res(true); m.close('yes'); } }, okLabel || I18N.t('common.ok'))],
         onClose: why => { if (why !== 'yes' && why !== 'no') res(false); }
       });
     });

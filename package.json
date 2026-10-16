@@ -5,12 +5,15 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/verify.js",
+    "test": "node tests/localization.js && node tests/verify.js",
     "verify": "node tests/verify.js",
     "test:online": "node --experimental-websocket tests/online-check.js",
-    "inject": "node scripts/inject-server-url.js"
+    "inject": "node scripts/inject-server-url.js",
+    "test:localization": "node tests/localization.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "license": "UNLICENSED",
   "private": true
 }
