@@ -1,0 +1,41 @@
+{
+  "zh-Hant": {
+    "name": "黑白棋",
+    "summary": "木質棋盤與大理石棋子，夾住對手的棋子翻成自己的顏色。可挑戰五段電腦，或開房間邀朋友對戰、觀戰。",
+    "modes": [
+      "幼幼班",
+      "單機練習",
+      "五段 AI",
+      "線上房間",
+      "觀戰",
+      "邀請連結"
+    ],
+    "controls": "點棋盤上的提示點落子（觸控第一次預覽、再點一次確認），方向鍵加 Enter 也可以"
+  },
+  "zh-Hans": {
+    "name": "黑白棋",
+    "summary": "木质棋盘与大理石棋子，夹住对手的棋子翻成自己的颜色。可挑战五段电脑，或开房间邀朋友对战、观战。",
+    "modes": [
+      "幼幼班",
+      "单机练习",
+      "五段 AI",
+      "线上房间",
+      "观战",
+      "邀请连结"
+    ],
+    "controls": "点棋盘上的提示点落子（触控第一次预览、再点一次确认），方向键加 Enter 也可以"
+  },
+  "en": {
+    "name": "Reversi",
+    "summary": "Wooden board, marble pieces: sandwich your opponent's pieces to flip them to your color. Take on a five-level computer, or open a room to play or spectate with friends.",
+    "modes": [
+      "Little Kids Mode",
+      "Solo Practice",
+      "Five AI Levels",
+      "Online Room",
+      "Spectate",
+      "Invite Link"
+    ],
+    "controls": "Tap a hint dot to place a piece (on touch, the first tap previews and the second confirms); arrow keys plus Enter work too"
+  }
+}
