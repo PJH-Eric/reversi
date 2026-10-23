@@ -13,9 +13,12 @@
   /* 隨機暱稱屬於玩家資料（寫入後不翻譯） */
   const ADJ = ['開心', '勇敢', '機靈', '安靜', '閃亮', '溫柔', '神秘', '迷糊', '大方', '勤勞'];
   const ANI = ['小熊', '小貓', '柴犬', '企鵝', '狐狸', '海獺', '貓頭鷹', '小鹿', '兔子', '浣熊'];
-  const randomName = () => I18N.lang === 'en'
-    ? ['Cozy', 'Brave', 'Quick', 'Sunny'][(Math.random() * 4) | 0] + ' ' + ['Fox', 'Shiba', 'Bunny', 'Otter'][(Math.random() * 4) | 0]
-    : ADJ[(Math.random() * ADJ.length) | 0] + ANI[(Math.random() * ANI.length) | 0];
+  const randomName = () => {
+    if (I18N.lang === 'en') return ['Cozy', 'Brave', 'Quick', 'Sunny'][(Math.random() * 4) | 0] + ' ' + ['Fox', 'Shiba', 'Bunny', 'Otter'][(Math.random() * 4) | 0];
+    const adj = (Math.random() * ADJ.length) | 0, animal = (Math.random() * ANI.length) | 0;
+    if (I18N.lang === 'zh-Hans') return T('nick.adj.' + adj) + T('nick.animal.' + animal);
+    return ADJ[adj] + ANI[animal];
+  };
   const phrases = () => [1, 2, 3, 4, 5].map(i => T('chat.p' + i));
   const LEVEL_STARS = { toddler: '★', easy: '★★', normal: '★★★', hard: '★★★★', myth: '★★★★★' };
 
@@ -648,7 +651,7 @@
     if (host) actions.push(h('button', { class: 'btn', type: 'button', onclick: copyInvite }, h('span', { html: icon('link') }), T('room.copyInvite')));
     actions.push(h('button', { class: 'btn ghost', type: 'button', onclick: askLeaveRoom }, T('act.leaveRoom')));
     const inv = room.invite;
-    const invText = !inv ? '' : inv.revoked ? T('room.inviteRevoked') : inv.expired ? T('room.inviteExpired') : T('room.inviteUntil', { t: new Date(inv.expiresAt).toLocaleTimeString(I18N.lang === 'en' ? 'en-US' : 'zh-TW', { hour: '2-digit', minute: '2-digit' }) });
+    const invText = !inv ? '' : inv.revoked ? T('room.inviteRevoked') : inv.expired ? T('room.inviteExpired') : T('room.inviteUntil', { t: new Date(inv.expiresAt).toLocaleTimeString(I18N.lang === 'en' ? 'en-US' : I18N.lang === 'zh-Hans' ? 'zh-CN' : 'zh-TW', { hour: '2-digit', minute: '2-digit' }) });
     const more = host ? h('details', { class: 'room-more' }, h('summary', null, T('room.more')),
       h('p', { class: 'spec-line' }, invText),
       h('div', { class: 'room-actions', style: 'margin:8px 0' },
