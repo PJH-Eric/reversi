@@ -8,6 +8,6 @@
   "genre": "棋類",
   "players": "1-2",
   "iconUrl": "https://pjh-eric.github.io/reversi/favicon-96.png",
-  "ogImage": "https://pjh-eric.github.io/reversi/og-image.png",
-  "ogImageAlt": "黑白棋遊戲圖示"
+  "ogImage": "https://pjh-eric.github.io/reversi/assets/images/cover.webp",
+  "ogImageAlt": "黑白棋 遊戲封面"
 }
