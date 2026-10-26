@@ -11,7 +11,12 @@
     on(type, fn) { (handlers[type] = handlers[type] || []).push(fn); },
     emit(type, a) { (handlers[type] || []).slice().forEach(f => { try { f(a); } catch (e) { console.error(e); } }); },
     /* 狀態只送代碼與數字參數（n），顯示文字由前端依語言翻譯 */
-    setStatus(s, n) { this.status = s; this.statusN = n == null ? null : n; this.emit('status', { status: s, n: this.statusN }); },
+    setStatus(s, n) {
+      this.status = s;
+      if (root.ServerOutage) root.ServerOutage.state(s === 'closed' ? 'idle' : s);
+      this.statusN = n == null ? null : n;
+      this.emit('status', { status: s, n: this.statusN });
+    },
     send(o) {
       if (this.ws && this.ws.readyState === 1) {
         this.ws.send(JSON.stringify(o));
@@ -37,8 +42,10 @@
           const r = await fetch(root.Config.serverUrl + '/health', { signal: ctl.signal, cache: 'no-store' }); clearTimeout(to);
           if (r.ok) break;
         } catch (e) { /* 還沒醒 */ }
+        if (!this.wantOn) return;
         if (Date.now() - t0 > 100000) { this.setStatus('failed'); this.wantOn = false; return; }
         await new Promise(r => setTimeout(r, 2200));
+        if (!this.wantOn) return;
         this.setStatus('waking', Math.round((Date.now() - t0) / 1000));
       }
       if (!this.wantOn) return;
