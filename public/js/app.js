@@ -102,6 +102,7 @@
 
   /* ================= 畫面切換 ================= */
   function show(name) {
+    if (window.ServerOutage) window.ServerOutage.setScreen(name === 'game' && isOnline() && G.room && G.room.status === 'waiting' ? 'room' : name);
     G.screen = name;
     app.dataset.screen = name;
     app.dataset.inGame = name === 'game' ? '1' : '0';
@@ -243,6 +244,7 @@
   }
 
   function showResult(info, quiet) {
+    if (window.ServerOutage) window.ServerOutage.setScreen('game');
     if (!isOnline() || G.me) GameAnalytics.end({ result: info.outcome });
     G.resInfo = info;
     const layer = $('result-layer');
@@ -542,7 +544,9 @@
   function onRoom(room) {
     GameAnalytics.sync(room.status, room.id + '|' + room.game.number, { mode: 'online', players: 2, spectator: room.you.role !== 'player' });
     const first = !G.room || G.room.id !== room.id;
-    G.room = room; if (room.serverNow) G.skew = room.serverNow - Date.now();
+    G.room = room;
+    if (window.ServerOutage) window.ServerOutage.setScreen(room.status === 'waiting' ? 'room' : 'game');
+    if (room.serverNow) G.skew = room.serverNow - Date.now();
     clearInviteParams(); G.invite = null; G.inviteError = '';
     if (first) { enterOnline(room); return; }
     const newGame = room.game.number !== G.gameNo;
@@ -635,7 +639,9 @@
   }
   function renderRoomPanel() {
     const p = $('room-panel');
-    if (!isOnline() || !G.room || !inGame() || G.room.status === 'playing' || !$('result-layer').hidden) { p.hidden = true; return; }
+    const waitingRoom = isOnline() && G.room && inGame() && G.room.status !== 'playing' && $('result-layer').hidden;
+    if (window.ServerOutage) window.ServerOutage.setScreen(waitingRoom ? 'room' : G.screen);
+    if (!waitingRoom) { p.hidden = true; return; }
     const oldMore = p.querySelector('details.room-more'), moreOpen = !!(oldMore && oldMore.open);
     const room = G.room, you = room.you, host = you.host;
     const seats = room.seats.map((s, i) => s ?
