@@ -1,5 +1,5 @@
 /* ===== tests/online-check.js — 真的起伺服器、用 WebSocket 打一局 =====
- * 需要 Node 22（內建 WebSocket），Node 20 要加 --experimental-websocket（npm run test:online 已經加了）。
+ * 需要 Node 26（內建 WebSocket），Node 20 要加 --experimental-websocket（npm run test:online 已經加了）。
  * 流程：甲建房 → 乙用邀請連結入座 → 丙觀戰 → 聊天 → 開局 → 下到一半乙斷線重連 → 下完 → 再來一局（換邊）
  *       → 認輸 → 甲離開 → 乙離開 → 房間關閉、舊邀請失效 → 亂送訊息不會把伺服器打掛。
  */
