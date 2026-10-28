@@ -27,7 +27,7 @@
     screen: 'home', mode: null, state: null, me: BLACK, names: { 1: T('color.black'), 2: T('color.white') },
     level: 'easy', busy: false, queue: [], applied: 0, gameId: 0, aiToken: 0, rng: RNG.create(RNG.newSeed()),
     hintOn: false, selected: -1, cursor: -1, waitingMove: false, localCfg: null,
-    room: null, skew: 0, gameNo: -1, resultShown: false, resultDismissed: false, lobby: [], invite: null, inviteError: '',
+    room: null, skew: 0, gameNo: -1, resultShown: false, resultDismissed: false, lobby: [], onlineCount: null, invite: null, inviteError: '',
     unread: 0, hist: [], draftLimit: 0, draftPrivate: false, roomBusy: false, scene: null
   };
   window.__rv = { G: G };
@@ -102,6 +102,7 @@
 
   /* ================= 畫面切換 ================= */
   function show(name) {
+    if (name === 'lobby' && G.screen !== 'lobby') G.onlineCount = null;
     if (window.ServerOutage) window.ServerOutage.setScreen(name === 'game' && isOnline() && G.room && G.room.status === 'waiting' ? 'room' : name);
     G.screen = name;
     app.dataset.screen = name;
@@ -495,6 +496,7 @@
     box.replaceChildren(...[
       h('div', { class: 'card-head' }, h('h2', { class: 'title', id: 'lobby-title' }, T('lobby.title')), h('button', { class: 'btn small ghost', type: 'button', onclick: () => { Net.close(); G.invite = null; show('home'); } }, T('common.back'))),
       h('div', { class: 'net-note', id: 'net-note' }),
+      h('div', { class: 'sub', id: 'online-count', 'aria-live': 'polite' }),
       G.invite ? inviteCard() : null,
       h('div', { class: 'lobby-grid' },
         h('section', null,
@@ -503,7 +505,7 @@
           h('button', { class: 'btn primary', type: 'button', style: 'width:100%;margin-top:10px', onclick: () => Net.send({ type: 'create', name: nick(), limit: G.draftLimit, isPrivate: G.draftPrivate }) }, T('lobby.create')),
           h('div', { class: 'sec-title' }, T('lobby.joinCode')), h('div', { class: 'field' }, h('div', { class: 'inline' }, codeIn, h('button', { class: 'btn small', type: 'button', onclick: joinCode }, T('common.join'))))),
         h('section', null, h('div', { class: 'sec-title', style: 'margin-top:0' }, T('lobby.public')), roomList))].filter(Boolean));
-    renderNetNote(); renderRoomList();
+    renderNetNote(); renderOnlineCount(); renderRoomList();
     Net.send({ type: 'lobby' });
   }
   function inviteCard() {
@@ -523,6 +525,10 @@
     const s = Net.status;
     n.className = 'net-note' + (s === 'failed' || s === 'disabled' ? ' bad' : '');
     n.textContent = s === 'open' ? T('net.open') : (netLabel() || T('net.connectingDots'));
+  }
+  function renderOnlineCount() {
+    const el = $('online-count');
+    if (el) el.textContent = Net.status === 'open' && Number.isInteger(G.onlineCount) ? T('lobby.onlineCount', { n: G.onlineCount }) : '';
   }
   function renderRoomList() {
     const ul = $('room-list'); if (!ul) return;
@@ -685,8 +691,8 @@
   $('chat-form').addEventListener('submit', e => { e.preventDefault(); const i = $('chat-input'), t = i.value.trim(); if (!t) return; Net.send({ type: 'chat', text: t }); i.value = ''; });
 
   /* ---------- 網路事件 ---------- */
-  Net.on('status', s => { if (G.screen === 'lobby') renderNetNote(); if (G.mode === 'online' && s.status === 'retrying') toast(T('toast.reconnecting'), 'bad'); if (s.status === 'open' && G.screen === 'lobby') Net.send({ type: 'lobby' }); });
-  Net.on('lobby', m => { G.lobby = m.rooms || []; if (G.screen === 'lobby') renderRoomList(); });
+  Net.on('status', s => { if (s.status !== 'open') G.onlineCount = null; if (G.screen === 'lobby') { renderNetNote(); renderOnlineCount(); } if (G.mode === 'online' && s.status === 'retrying') toast(T('toast.reconnecting'), 'bad'); if (s.status === 'open' && G.screen === 'lobby') Net.send({ type: 'lobby' }); });
+  Net.on('lobby', m => { G.lobby = m.rooms || []; G.onlineCount = Number.isInteger(m.online) && m.online >= 0 ? m.online : null; if (G.screen === 'lobby') { renderOnlineCount(); renderRoomList(); } });
   Net.on('room', m => onRoom(m.room));
   Net.on('moved', onMoved);
   Net.on('chat', m => addChat(m.msg));

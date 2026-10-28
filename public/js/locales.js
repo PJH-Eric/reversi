@@ -84,7 +84,7 @@
     'dlg.resignOnTitle': '確定認輸？', 'dlg.resignOnText': '認輸會直接判對手獲勝。', 'dlg.resignOnOk': '認輸',
     'dlg.leaveRoomTitle': '離開房間？', 'dlg.leaveRoomText': '對局進行中離開，會判對手獲勝。',
 
-    'lobby.title': '線上對戰', 'lobby.nick': '你的暱稱', 'lobby.nickAria': '暱稱', 'lobby.shuffle': '換一個',
+    'lobby.title': '線上對戰', 'lobby.onlineCount': '目前在線：{n} 人', 'lobby.nick': '你的暱稱', 'lobby.nickAria': '暱稱', 'lobby.shuffle': '換一個',
     'lobby.create': '建立房間', 'lobby.limit': '每步限時', 'lobby.noLimit': '不限時', 'lobby.sec': '{n} 秒',
     'lobby.private': '私人房', 'lobby.privateHint': '不會出現在列表，只能用邀請連結加入',
     'lobby.joinCode': '用房號加入', 'lobby.codePh': '房號 4 碼', 'lobby.codeAria': '房號',
@@ -243,7 +243,7 @@
     'dlg.resignOnTitle': 'Resign?', 'dlg.resignOnText': 'Your opponent wins if you resign.', 'dlg.resignOnOk': 'Resign',
     'dlg.leaveRoomTitle': 'Leave room?', 'dlg.leaveRoomText': 'Leaving mid-game gives your opponent the win.',
 
-    'lobby.title': 'Online Play', 'lobby.nick': 'Your nickname', 'lobby.nickAria': 'Nickname', 'lobby.shuffle': 'Shuffle',
+    'lobby.title': 'Online Play', 'lobby.onlineCount': 'Online now: {n}', 'lobby.nick': 'Your nickname', 'lobby.nickAria': 'Nickname', 'lobby.shuffle': 'Shuffle',
     'lobby.create': 'Create Room', 'lobby.limit': 'Move timer', 'lobby.noLimit': 'No limit', 'lobby.sec': '{n} s',
     'lobby.private': 'Private room', 'lobby.privateHint': 'Hidden from the list; join by invite link only',
     'lobby.joinCode': 'Join by Code', 'lobby.codePh': '4-char code', 'lobby.codeAria': 'Room code',
@@ -478,6 +478,7 @@
   "dlg.leaveRoomTitle": "离开房间？",
   "dlg.leaveRoomText": "对局进行中离开，会判对手获胜。",
   "lobby.title": "线上对战",
+  "lobby.onlineCount": "当前在线：{n} 人",
   "lobby.nick": "你的暱称",
   "lobby.nickAria": "暱称",
   "lobby.shuffle": "换一个",

@@ -54,6 +54,8 @@ function get(port, path) {
     assert.strictEqual((await get(port, '/health')).ok, true); ok('/health 正常');
     await A.connect(); await B.connect(); await C.connect();
     assert.ok(A.msgs.find(m => m.type === 'welcome').personId); ok('三人連線、拿到 welcome');
+    assert.strictEqual((await A.wait(m => m.type === 'lobby' && m.online === 3)).online, 3);
+    ok('大廳收到連線人數更新');
 
     A.send({ type: 'create', name: '甲', limit: 0 });
     const r1 = await A.wait(m => m.type === 'room');

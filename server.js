@@ -49,7 +49,7 @@ const io = {
 const hub = createHub(io);
 
 function lobbyIds() { const out = []; for (const [id, it] of people) if (!it.person.roomId && it.person.ready) out.push(id); return out; }
-function sendLobby(pid) { io.send(pid, { type: 'lobby', rooms: hub.listRooms(), online: people.size }); }
+function sendLobby(pid) { io.send(pid, { type: 'lobby', rooms: hub.listRooms(), online: Array.from(people.values()).filter(it => it.person.ready).length }); }
 function broadcastLobby() { for (const id of lobbyIds()) sendLobby(id); }
 
 setInterval(() => {
@@ -137,6 +137,7 @@ ws.attach(server, {
           socket.sendJSON({ type: 'welcome', personId: newId, name: person.name, reconnectMs: hub.CONST.RECONNECT_MS });
           const room = hub.reconnect(person);
           if (!room) { const r = hub.roomFor(newId); if (r) { person.roomId = r.id; hub.sendRoom(newId); } else sendLobby(newId); }
+          broadcastLobby();
           return;
         }
         if (!person.ready) return;
