@@ -56,9 +56,13 @@ if (undef.length) fail('原始碼用到但字典沒有：' + undef.map(([k, f]) 
 /* 伺服器端不送中文顯示文字（去掉註解後檢查字串字面值） */
 const hz = /[一-鿿]/;
 const srvBad = [];
+const stripBlockComments = source => source.replace(/\/\*[\s\S]*?\*\//g, comment => comment.replace(/[^\n]/g, ''));
+const stripLineComment = line => line.replace(/\/\/[^\r\n]*/, '');
+if (hz.test(stripLineComment('const label = "test"; // 繁體中文\r'))) fail('CRLF 行註解未從掃描內容移除');
+else ok('CRLF 行註解會從掃描內容移除');
 for (const f of ['lib/rooms.js', 'lib/ws.js', 'server.js']) {
-  read(f).replace(/\/\*[\s\S]*?\*\//g, '').split('\n').forEach((line, i) => {
-    const code = line.replace(/\/\/.*$/, '');
+  stripBlockComments(read(f)).split('\n').forEach((line, i) => {
+    const code = stripLineComment(line);
     if (/console\.(log|error)/.test(code)) return;     // 主控台日誌給開發者看
     if (/'玩家' \+/.test(code)) return;                // 暱稱預設值屬於玩家資料
     if (hz.test(code)) srvBad.push(f + ':' + (i + 1));
@@ -69,8 +73,8 @@ if (srvBad.length) fail('伺服器端仍有中文字面值：' + srvBad.join(', 
 /* 前端 JS 不得殘留中文字面值（字典與註解除外；隨機暱稱與中英切換鈕字樣屬資料） */
 const feBad = [];
 for (const f of jsFiles) {
-  read(f).replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, '')).split('\n').forEach((line, i) => {
-    const code = line.replace(/\/\/.*$/, '');
+  stripBlockComments(read(f)).split('\n').forEach((line, i) => {
+    const code = stripLineComment(line);
     if (/const (ADJ|ANI) =/.test(code)) return;
     if (f === 'public/js/config.js') return;           // 只給開發者看的設定診斷訊息，不會顯示在畫面上
     if (hz.test(code)) feBad.push(f + ':' + (i + 1));
