@@ -255,7 +255,7 @@
     const waitingAgain = online && G.resAgain && !spec;
     if (!quiet) { Sound.play(info.outcome === 'win' ? 'win' : info.outcome === 'lose' ? 'lose' : 'draw'); Sound.buzz(info.outcome === 'win' ? [40, 40, 90] : 40); }
     const again = h('button', { class: 'btn primary', type: 'button', id: 'res-again', disabled: spec || waitingAgain, onclick: onAgain }, waitingAgain ? T('result.waiting') : T('result.again'));
-    const card = h('div', { class: 'result-card ' + (info.outcome || ''), role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'res-title' },
+    const card = h('div', { class: 'result-card ' + (info.outcome || ''), 'data-result-share': '', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'res-title' },
       h('h2', { id: 'res-title' }, title),
       h('p', { class: 'why' }, typeof info.why === 'function' ? info.why() : (info.why || '')),
       h('div', { class: 'final' },
