@@ -1,13 +1,13 @@
 {
   "id": "reversi",
   "siteUrl": "https://pjh-eric.github.io/reversi/",
-  "title": "黑白棋｜免費線上雙人對弈・五段電腦",
-  "description": "免費免下載的黑白棋，在木質棋盤上夾住對手棋子，翻轉顏色爭取最多領地。五段電腦難度從幼幼班到進階，也能開房間邀朋友雙人對弈、觀戰聊天，手機平板皆可操作。",
+  "title": "黑白棋（奧賽羅）｜免費線上對戰",
+  "description": "免費線上玩黑白棋（奧賽羅），在 8×8 棋盤夾住並翻轉對手棋子，爭取最多棋子。可挑戰五段電腦、單機練習或邀朋友開房對弈與觀戰，手機平板免下載。",
   "lobbyUrl": "https://pjh-eric.github.io/game-lobby/",
   "googleSiteVerification": "",
-  "genre": "棋類",
+  "genre": "策略棋類",
   "players": "1-2",
   "iconUrl": "https://pjh-eric.github.io/reversi/favicon-96.png",
   "ogImage": "https://pjh-eric.github.io/reversi/assets/images/cover.webp",
-  "ogImageAlt": "黑白棋 遊戲封面"
+  "ogImageAlt": "黑白棋（奧賽羅）免費線上對弈遊戲封面"
 }

@@ -7,8 +7,8 @@
   'use strict';
   var zh = {
     'lang.switchTo': '切換語言為 English',
-    'doc.title': "黑白棋｜免費線上雙人對弈・五段電腦",
-    'doc.desc': "免費免下載的黑白棋，在木質棋盤上夾住對手棋子，翻轉顏色爭取最多領地。五段電腦難度從幼幼班到進階，也能開房間邀朋友雙人對弈、觀戰聊天，手機平板皆可操作。",
+    'doc.title': "黑白棋（奧賽羅）｜免費線上對戰",
+    'doc.desc': "免費線上玩黑白棋（奧賽羅），在 8×8 棋盤夾住並翻轉對手棋子，爭取最多棋子。可挑戰五段電腦、單機練習或邀朋友開房對弈與觀戰，手機平板免下載。",
     'common.back': '返回', 'common.cancel': '取消', 'common.on': '開', 'common.off': '關', 'common.auto': '自動',
     'common.ok': '確定', 'common.notNow': '先不要', 'common.close': '關閉', 'common.join': '加入', 'common.watch': '觀戰',
 
@@ -166,8 +166,8 @@
 
   var en = {
     'lang.switchTo': 'Switch language to 繁體中文',
-    'doc.title': 'Reversi',
-    'doc.desc': 'Reversi with a wooden board and marble discs: five computer levels, plus 1-on-1 online play with spectating, invite links and chat.',
+    'doc.title': 'Reversi (Othello) | Free Online Board Game',
+    'doc.desc': 'Play Reversi (Othello) online for free. Trap and flip your opponent’s discs on an 8×8 board to finish with the most discs. Practice solo, challenge five AI levels, or play and spectate with friends—no download needed.',
     'common.back': 'Back', 'common.cancel': 'Cancel', 'common.on': 'On', 'common.off': 'Off', 'common.auto': 'Auto',
     'common.ok': 'OK', 'common.notNow': 'Not now', 'common.close': 'Close', 'common.join': 'Join', 'common.watch': 'Watch',
 
@@ -330,8 +330,8 @@
 (function (root) {
   var hans = {
   "lang.switchTo": "切换语言为 English",
-  "doc.title": "黑白棋｜免费线上双人对弈・五段电脑",
-  "doc.desc": "免费免下载的黑白棋，在木质棋盘上夹住对手棋子，翻转颜色争取最多领地。五段电脑难度从幼幼班到进阶，也能开房间邀朋友双人对弈、观战聊天，手机平板皆可操作。",
+  "doc.title": "黑白棋（奥赛罗）｜免费在线对战",
+  "doc.desc": "免费在线玩黑白棋（奥赛罗），在 8×8 棋盘夹住并翻转对手棋子，争取最多棋子。可挑战五段电脑、单机练习或邀请朋友开房对弈与观战，手机平板免下载。",
   "common.back": "返回",
   "common.cancel": "取消",
   "common.on": "开",

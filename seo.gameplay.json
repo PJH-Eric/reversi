@@ -1,7 +1,7 @@
 {
   "zh-Hant": {
     "name": "黑白棋",
-    "summary": "木質棋盤與大理石棋子，夾住對手的棋子翻成自己的顏色。可挑戰五段電腦，或開房間邀朋友對戰、觀戰。",
+    "summary": "黑白棋又稱奧賽羅：在 8×8 棋盤夾住並翻轉對手棋子，爭取終局最多棋子。可挑戰五段電腦，或與朋友線上對弈、觀戰和聊天。",
     "modes": [
       "幼幼班",
       "單機練習",
@@ -14,7 +14,7 @@
   },
   "zh-Hans": {
     "name": "黑白棋",
-    "summary": "木质棋盘与大理石棋子，夹住对手的棋子翻成自己的颜色。可挑战五段电脑，或开房间邀朋友对战、观战。",
+    "summary": "黑白棋又称奥赛罗：在 8×8 棋盘夹住并翻转对手棋子，争取终局最多棋子。可挑战五段电脑，或与朋友在线对弈、观战和聊天。",
     "modes": [
       "幼幼班",
       "单机练习",
@@ -27,7 +27,7 @@
   },
   "en": {
     "name": "Reversi",
-    "summary": "Wooden board, marble pieces: sandwich your opponent's pieces to flip them to your color. Take on a five-level computer, or open a room to play or spectate with friends.",
+    "summary": "Reversi, also known as Othello: trap and flip your opponent’s discs on an 8×8 board to finish with the most discs. Challenge five AI levels or play, spectate, and chat with friends online.",
     "modes": [
       "Little Kids Mode",
       "Solo Practice",
