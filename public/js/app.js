@@ -692,6 +692,27 @@
 
   /* ---------- 網路事件 ---------- */
   Net.on('status', s => { if (s.status !== 'open') G.onlineCount = null; if (G.screen === 'lobby') { renderNetNote(); renderOnlineCount(); } if (G.mode === 'online' && s.status === 'retrying') toast(T('toast.reconnecting'), 'bad'); if (s.status === 'open' && G.screen === 'lobby') Net.send({ type: 'lobby' }); });
+  /* ---------- 線上大廳聊天室（左下氣泡） ---------- */
+  const LobbyChatUI = window.LobbyChat ? window.LobbyChat.create({
+    game: 'reversi',
+    watch: '#scr-lobby',
+    getName: () => nick(),
+    setName: n => { Store.set('nickname', n.slice(0, 12)); if (G.screen === 'lobby') renderLobby(); },
+    join: name => Net.send({ type: 'lobbychat', op: 'join', name: name }),
+    leave: () => Net.send({ type: 'lobbychat', op: 'leave' }),
+    send: (text, name) => Net.send({ type: 'lobbychat', op: 'send', text: text, name: name }),
+    joinRoom: code => Net.send({ type: 'join', roomId: code, want: 'player', name: nick() })
+  }) : null;
+  if (LobbyChatUI) {
+    LobbyChatUI.setConnected(Net.status === 'open');
+    Net.on('status', s => LobbyChatUI.setConnected(s.status === 'open'));
+    Net.on('lobbychat', m => {
+      if (m.op === 'history') LobbyChatUI.history(m.history, m.online);
+      else if (m.op === 'msg') LobbyChatUI.add(m.msg);
+      else if (m.op === 'online') LobbyChatUI.online(m.online);
+      else if (m.op === 'error') LobbyChatUI.error(m.code);
+    });
+  }
   Net.on('lobby', m => { G.lobby = m.rooms || []; G.onlineCount = Number.isInteger(m.online) && m.online >= 0 ? m.online : null; if (G.screen === 'lobby') { renderOnlineCount(); renderRoomList(); } });
   Net.on('room', m => onRoom(m.room));
   Net.on('moved', onMoved);
@@ -725,12 +746,13 @@
       h('div', { class: 'row' }, h('span', { class: 'row-label' }, T('set.quality'), h('small', null, T('set.qualityHint'))), sg(T('set.quality'), 'quality', [{ value: 'auto', label: T('common.auto') }, { value: 'high', label: T('set.qHigh') }, { value: 'mid', label: T('set.qMid') }, { value: 'low', label: T('set.qLow') }])),
       sw(T('set.reduce'), 'reduceMotion', T('set.reduceHint')), sw(T('set.assist'), 'colorAssist', T('set.assistHint')),
       sw(T('set.legal'), 'showLegal'), sw(T('set.last'), 'showLast'), sw(T('set.coords'), 'showCoords'),
+      LobbyChatUI ? (() => { const r = Switch(LobbyChatUI.text('set'), () => LobbyChatUI.isEnabled(), v => LobbyChatUI.setEnabled(v), LobbyChatUI.text('setSub')); rows.push(r); return r; })() : null,
       h('div', { class: 'sec-title' }, T('set.controls')),
       h('div', { class: 'row' }, h('span', { class: 'row-label' }, T('set.confirm'), h('small', null, T('set.confirmHint'))), sg(T('set.confirm'), 'confirmMove', [{ value: 'auto', label: T('common.auto') }, { value: 'on', label: T('set.confirmOn') }, { value: 'off', label: T('set.confirmOff') }])),
       h('div', { class: 'row' }, h('span', { class: 'row-label' }, T('set.side'), h('small', null, T('set.sideHint'))), sg(T('set.side'), 'cameraSide', [{ value: 'auto', label: T('set.sideAuto') }, { value: 'fixed', label: T('set.sideFixed') }])));
     settingsModal = modal({
       title: T('set.title'), body: body, focus: '.sw',
-      actions: [h('button', { class: 'btn ghost', type: 'button', onclick: () => { Store.reset(); rows.forEach(r => r.refresh && r.refresh()); toast(T('toast.reset')); } }, T('set.reset')), h('button', { class: 'btn primary', type: 'button', onclick: () => settingsModal.close() }, T('set.done'))]
+      actions: [h('button', { class: 'btn ghost', type: 'button', onclick: () => { Store.reset(); if (LobbyChatUI) LobbyChatUI.setEnabled(true); rows.forEach(r => r.refresh && r.refresh()); toast(T('toast.reset')); } }, T('set.reset')), h('button', { class: 'btn primary', type: 'button', onclick: () => settingsModal.close() }, T('set.done'))]
     });
   }
   $('btn-settings').addEventListener('click', openSettings);

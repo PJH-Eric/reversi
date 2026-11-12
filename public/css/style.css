@@ -317,3 +317,12 @@ body.reduce-motion * { animation-duration: .01ms !important; transition-duration
 .inline { min-width: 0; flex-wrap: wrap; }
 .inline input { min-width: 0; flex: 1 1 140px; }
 .inline .btn { flex-shrink: 0; }
+
+/* ---------- 大廳聊天室：套用黑白棋木紋配色 ---------- */
+body .lc-root {
+  --lc-accent: var(--brass); --lc-accent-ink: #2a1f17;
+  --lc-panel-bg: var(--panel-solid); --lc-panel-solid: var(--panel-solid);
+  --lc-ink: var(--text); --lc-muted: var(--muted); --lc-line: var(--line);
+  --lc-field-bg: var(--bg); --lc-sys-bg: rgba(200, 155, 60, .18); --lc-name: var(--brass-hi);
+  --lc-font: var(--font); --lc-radius: var(--radius); --lc-z: 95;
+}

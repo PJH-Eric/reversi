@@ -34,7 +34,8 @@ if (empty.length) fail('空字串：' + empty.join(', ')); else ok('沒有空字
 /* 原始碼用到的 key */
 const used = new Map();
 const add = (k, f) => { if (!used.has(k)) used.set(k, f); };
-const jsFiles = fs.readdirSync(path.join(ROOT, 'public/js')).filter(f => f.endsWith('.js') && !['locales.js', 'i18n.js'].includes(f)).map(f => 'public/js/' + f);
+/* lobby-chat.js 是各遊戲共用的大廳聊天元件，自帶繁中／簡中／英文字典 */
+const jsFiles = fs.readdirSync(path.join(ROOT, 'public/js')).filter(f => f.endsWith('.js') && !['locales.js', 'i18n.js', 'lobby-chat.js'].includes(f)).map(f => 'public/js/' + f);
 const prefixes = new Set(zk.map(k => k.split('.')[0]));
 const keyRe = /['"`]([a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9_]+)+)['"`](?!\s*\+)/g;
 for (const f of jsFiles) {
