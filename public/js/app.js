@@ -633,7 +633,7 @@
     const u = new URL(location.href);
     ['room', 'invite'].forEach(k => u.searchParams.delete(k));
     u.hash = ''; u.searchParams.set('room', G.room.id); u.searchParams.set('invite', G.room.invite.token);
-    return u.toString();
+    return Net.pinInvite(u).toString();
   }
   async function copyInvite() {
     const url = inviteUrl();

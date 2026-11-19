@@ -3,11 +3,21 @@
 (function (root) {
   'use strict';
   const handlers = {};
+  const cloudflare = 'https://reversi-backup.eric-games.workers.dev';
+  const route = root.createBackendRouter && root.Config?.source === 'injected' && root.Config.serverUrl === cloudflare
+    ? root.createBackendRouter({
+      primary: { id: 'cloudflare', url: cloudflare, websocketPath: '/ws', timeoutMs: 5000 },
+      standby: { id: 'render', url: 'https://reversi-agj3.onrender.com', websocketPath: '/ws', timeoutMs: 12000 },
+      pin: new URLSearchParams(root.location.search).get('backend')
+    })
+    : null;
+
   const Net = {
     status: 'idle', ws: null, personId: null, name: '', reconnectMs: 30000, wantOn: false,
-    lastMsgAt: 0, retry: 0, pingTimer: null, watchTimer: null, rtt: null, welcomed: false,
+    lastMsgAt: 0, retry: 0, pingTimer: null, watchTimer: null, rtt: null, welcomed: false, wakeId: 0,
     get enabled() { return !!(root.Config && root.Config.status === 'ok' && root.Config.serverUrl); },
-    get wsUrl() { return root.Config.serverUrl.replace(/^http/i, 'ws') + '/ws'; },
+    get wsUrl() { return (route?.url || root.Config.serverUrl).replace(/^http/i, 'ws') + '/ws'; },
+    pinInvite(url) { return route ? route.pinInvite(url) : url; },
     on(type, fn) { (handlers[type] = handlers[type] || []).push(fn); },
     emit(type, a) { (handlers[type] || []).slice().forEach(f => { try { f(a); } catch (e) { console.error(e); } }); },
     /* 狀態只送代碼與數字參數（n），顯示文字由前端依語言翻譯 */
@@ -34,21 +44,27 @@
       this.wake();
     },
     async wake() {
+      const wakeId = ++this.wakeId;
       this.setStatus('waking');
       const t0 = Date.now();
-      while (this.wantOn) {
+      while (this.wantOn && this.wakeId === wakeId) {
+        const selected = route ? await route.select() : root.Config.serverUrl;
+        if (!this.wantOn || this.wakeId !== wakeId) return;
         try {
-          const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 6000);
-          const r = await fetch(root.Config.serverUrl + '/health', { signal: ctl.signal, cache: 'no-store' }); clearTimeout(to);
-          if (r.ok) break;
+          if (selected) {
+            const response = await fetch(selected + '/health', {
+              signal: AbortSignal.timeout(6000), cache: 'no-store'
+            });
+            if (response.ok) break;
+          }
         } catch (e) { /* 還沒醒 */ }
-        if (!this.wantOn) return;
+        if (!this.wantOn || this.wakeId !== wakeId) return;
         if (Date.now() - t0 > 100000) { this.setStatus('failed'); this.wantOn = false; return; }
         await new Promise(r => setTimeout(r, 2200));
-        if (!this.wantOn) return;
+        if (!this.wantOn || this.wakeId !== wakeId) return;
         this.setStatus('waking', Math.round((Date.now() - t0) / 1000));
       }
-      if (!this.wantOn) return;
+      if (!this.wantOn || this.wakeId !== wakeId) return;
       this.open();
     },
     open() {
@@ -85,7 +101,15 @@
       this.send({ type: 'ping', t: Date.now() });
     },
     stopTimers() { clearInterval(this.pingTimer); clearInterval(this.watchTimer); this.pingTimer = this.watchTimer = null; },
-    close() { this.wantOn = false; this.stopTimers(); if (this.ws) { try { this.ws.close(); } catch (e) { /* ignore */ } } this.ws = null; this.setStatus('closed'); root.Latency.off(); }
+    close() {
+      this.wantOn = false;
+      this.wakeId++;
+      this.stopTimers();
+      if (this.ws) { try { this.ws.close(); } catch (e) { /* ignore */ } }
+      this.ws = null;
+      this.setStatus('closed');
+      root.Latency.off();
+    }
   };
   root.Net = Net;
 })(typeof self !== 'undefined' ? self : this);
