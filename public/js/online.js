@@ -3,11 +3,13 @@
 (function (root) {
   'use strict';
   const handlers = {};
+  const render = 'https://reversi-agj3.onrender.com';
   const cloudflare = 'https://reversi-backup.eric-games.workers.dev';
-  const route = root.createBackendRouter && root.Config?.source === 'injected' && root.Config.serverUrl === cloudflare
+  const useManagedRoute = root.Config?.source === 'injected' && [render, cloudflare].includes(root.Config.serverUrl);
+  const route = root.createBackendRouter && useManagedRoute
     ? root.createBackendRouter({
-      primary: { id: 'cloudflare', url: cloudflare, websocketPath: '/ws', timeoutMs: 5000 },
-      standby: { id: 'render', url: 'https://reversi-agj3.onrender.com', websocketPath: '/ws', timeoutMs: 12000 },
+      primary: { id: 'render', url: render, websocketPath: '/ws', timeoutMs: 12000 },
+      standby: { id: 'cloudflare', url: cloudflare, websocketPath: '/ws', timeoutMs: 5000 },
       pin: new URLSearchParams(root.location.search).get('backend')
     })
     : null;
