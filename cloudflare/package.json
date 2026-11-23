@@ -1,0 +1,7 @@
+{
+  "name": "reversi-cloudflare-worker",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "4.166.0"
+  }
+}

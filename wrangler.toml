@@ -1,0 +1,29 @@
+name = "reversi-backup"
+main = "cloudflare/worker.mjs"
+compatibility_date = "2025-12-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "ReversiLobby"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ReversiLobby"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+redact_query_string = false
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true
