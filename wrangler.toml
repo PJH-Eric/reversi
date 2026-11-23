@@ -6,11 +6,18 @@ workers_dev = true
 
 [[durable_objects.bindings]]
 name = "HUB"
-class_name = "ReversiLobby"
+class_name = "GameLobby"
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["ReversiLobby"]
+
+[[migrations]]
+tag = "v2"
+
+  [[migrations.renamed_classes]]
+  from = "ReversiLobby"
+  to = "GameLobby"
 
 [observability]
 enabled = true

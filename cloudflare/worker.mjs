@@ -33,7 +33,7 @@ export default {
   }
 };
 
-export class ReversiLobby extends DurableObject {
+export class GameLobby extends DurableObject {
   gateway = createGateway();
   connections = new Set();
   heartbeat;
