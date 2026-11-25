@@ -35,11 +35,10 @@
   }
 
   var SPONSOR_URL = 'https://portaly.cc/pjh-eric/support';
-  var SPONSOR_WORD = { 'zh-Hant': '贊助', 'zh-Hans': '赞助', en: 'Sponsorships' };
 
   function fillMessage(el, text, language) {
     var locale = /^en/i.test(language) ? 'en' : /Hans|CN|SG/i.test(language) ? 'zh-Hans' : 'zh-Hant';
-    var word = SPONSOR_WORD[locale];
+    var word = w.ServerOutageMessages[locale][3];
     var at = text.indexOf(word);
     if (at < 0) { el.textContent = text; return; }
     var link = document.createElement('a');

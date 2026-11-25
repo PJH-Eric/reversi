@@ -655,8 +655,8 @@
 /* Server outage translations (shared by the custom notice component). */
 (function (root) {
   root.ServerOutageMessages = {
-    'zh-Hant': ['目前伺服器過載休息中', '歡迎贊助升級', '知道了'],
-    'zh-Hans': ['目前服务器过载休息中', '欢迎赞助升级', '知道了'],
-    en: ['The server is overloaded and resting', 'Sponsorships to help us upgrade are welcome', 'Got it']
+    'zh-Hant': ['目前伺服器過載休息中', '歡迎贊助升級', '知道了', '贊助'],
+    'zh-Hans': ['目前服务器过载休息中', '欢迎赞助升级', '知道了', '赞助'],
+    en: ['The server is overloaded and resting', 'Sponsorships to help us upgrade are welcome', 'Got it', 'Sponsorships']
   };
 })(typeof window !== 'undefined' ? window : globalThis);
