@@ -6,13 +6,15 @@ const MAX_MESSAGE_BYTES = 64 * 1024;
 const HEARTBEAT_MS = 1000;
 const CLIENT_TIMEOUT_MS = 9000;
 const ORIGIN = 'https://pjh-eric.github.io';
+const DO_VERSION = 'v2';
+
 const headers = {
   'Access-Control-Allow-Origin': ORIGIN,
   'Cache-Control': 'no-store'
 };
 
 export default {
-  fetch(request, env) {
+  async fetch(request, env) {
     const { pathname } = new URL(request.url);
     if (pathname === '/ws') {
       const origin = request.headers.get('Origin');
@@ -28,8 +30,20 @@ export default {
       if (request.method !== 'GET') return new Response('Method not allowed', { status: 405, headers });
     }
 
-    const lobby = env.HUB.getByName(GAME_ID, { locationHint: 'apac' });
-    return lobby.fetch(request);
+    const id = env.HUB.idFromName(`${GAME_ID}-${DO_VERSION}`);
+    const stub = env.HUB.get(id, { locationHint: 'apac' });
+    const started = performance.now();
+    const response = await stub.fetch(request);
+    const rtt = performance.now() - started;
+    const out = new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      webSocket: response.webSocket
+    });
+    out.headers.set('x-do-rtt-ms', rtt.toFixed(1));
+    out.headers.set('x-edge-colo', request.cf?.colo ?? 'unknown');
+    return out;
   }
 };
 
@@ -37,6 +51,15 @@ export class GameLobby extends DurableObject {
   gateway = createGateway();
   connections = new Set();
   heartbeat;
+
+  constructor(ctx, env) {
+    super(ctx, env);
+    ctx.blockConcurrencyWhile(async () => {
+      if (await ctx.storage.get('creationLogged')) return;
+      await ctx.storage.put('creationLogged', true);
+      console.log('durable_object_created', { id: ctx.id.toString(), version: DO_VERSION, role: 'lobby' });
+    });
+  }
 
   fetch(request) {
     const { pathname } = new URL(request.url);
